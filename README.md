@@ -18,6 +18,7 @@ It is completely server-side and does NOT need to be installed on any clients in
 - Player to Player trading / Auction house.
 - Player run Chestshops.
 - Sell wands.
+- Custom NBT tag support for shop items.
 
 ### Commands
 - /bal, /money - Displays the player's balance.
