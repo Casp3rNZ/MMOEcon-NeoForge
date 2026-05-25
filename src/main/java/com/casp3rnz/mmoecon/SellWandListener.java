@@ -1,15 +1,23 @@
 package com.casp3rnz.mmoecon;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.CompoundContainer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.AbstractChestBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
@@ -18,7 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Listens for left-click block events and handles the sell wand flow.
+ * Listens for right-click block events and handles the sell wand flow.
  *
  * Supported containers: anything whose BlockEntity implements Container —
  *  * this covers minecraft:chest, minecraft:barrel, minecraft:trapped_chest,
@@ -26,29 +34,29 @@ import java.util.UUID;
  *  * as long as they implement Container.
  *
  * Flow:
- *   1st left-click: scan container, build preview, store PendingSale
- *   2nd left-click on same block within 15s: execute sale
- *   Left-click different block, or timeout: clear pending, start fresh
+ *   1st right-click: scan container, build preview, store PendingSale
+ *   2nd right-click on same block within 15s: execute sale
+ *   right-click different block, or timeout: clear pending, start fresh
  */
 
 public class SellWandListener {
 
     @SubscribeEvent
-    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         // Server-side only
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
 
         ItemStack held = player.getMainHandItem();
         if (!SellWand.isWand(held)) return;
-        // Cancel block break event
         event.setCanceled(true);
 
         BlockPos pos = event.getPos();
         BlockEntity be = level.getBlockEntity(pos);
 
         // Check if the clicked block is a supported container
-        if (!(be instanceof Container container)) {
+        Container container = getContainer(level, pos);
+        if (container == null) {
             player.sendSystemMessage(Component.literal("§cThis block is not a supported container."));
             SellWand.clearPending(player.getUUID());
             return;
@@ -158,6 +166,59 @@ public class SellWandListener {
         return new SaleResult(totalEarned, totalItems, slots);
     }
 
+    /**
+     * Returns the container at the given position, automatically combining
+     * both halves if the block is a large (double) chest or trapped chest.
+     * Falls back to the raw BlockEntity inventory for any other container.
+     * Returns null if the block has no inventory.
+     */
+    private static Container getContainer(ServerLevel level, BlockPos pos) {
+
+        BlockEntity be = level.getBlockEntity(pos);
+        if(be == null) return null;
+
+        // Handle double chests by checking for a neighbour chest and combining
+        if (be instanceof ChestBlockEntity chest) {
+            BlockState state = level.getBlockState(pos);
+
+            ChestType chestType = state.getValue(ChestBlock.TYPE);
+            if (chestType != ChestType.SINGLE) {
+                Direction facing = state.getValue(ChestBlock.FACING);
+                Direction partnerDir = chestType == ChestType.RIGHT
+                        ? facing.getCounterClockWise()
+                        : facing.getClockWise();
+
+                BlockPos partnerPos = pos.relative(partnerDir);
+                BlockState partnerState = level.getBlockState(partnerPos);
+                BlockEntity partnerBe = level.getBlockEntity(partnerPos);
+
+                // Verify same block type AND opposite chest half — rules out adjacent unrelated chests
+                ChestType partnerType =
+                        partnerState.hasProperty(ChestBlock.TYPE)
+                                ? partnerState.getValue(ChestBlock.TYPE)
+                                : ChestType.SINGLE;
+
+                boolean trulyPaired = partnerBe instanceof ChestBlockEntity
+                        && partnerState.getBlock() == state.getBlock()
+                        && partnerType != chestType  // opposite halves
+                        && partnerType != ChestType.SINGLE;
+
+                if (trulyPaired) {
+                    ChestBlockEntity partnerChest = (ChestBlockEntity) partnerBe;
+                    if (chestType == ChestType.RIGHT) {
+                        return new CompoundContainer(chest, partnerChest);
+                    } else {
+                        return new CompoundContainer(partnerChest, chest);
+                    }
+                }
+            }
+
+            // If single chest
+            return chest;
+        }
+        return null;
+    }
+
     /** Removes items from the container at the slots identified by calculateSale. */
     private static void removeItems(Container container, List<SlotSale> slots) {
         for (SlotSale slot : slots) {
@@ -166,7 +227,7 @@ public class SellWandListener {
         container.setChanged();
     }
 
-    // ── Internal records ──────────────────────────────────────────────────────
+    // Internal records
 
     private record SlotSale(int slotIndex, int quantity, float earned) {}
 

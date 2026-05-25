@@ -17,7 +17,7 @@ import net.minecraft.nbt.CompoundTag;
 
 /**
  * Represents the Sell Wand — an NBT-tagged blaze rod that lets players
- * right-click a chest to sell all its sellable contents.
+ * Right-click a chest to sell all its sellable contents.
  * Two-click confirm flow:
  *   1st click: calculates total, stores a PendingSale, sends summary to player
  *   2nd click (within CONFIRM_TIMEOUT_TICKS): executes the sale
@@ -67,7 +67,7 @@ public class SellWand {
 
         // Lore
         List<Component> lore = List.of(
-                Component.literal("§7Left-click a chest to sell")
+                Component.literal("§7Right-click a chest to sell")
                         .withStyle(s -> s.withItalic(false)),
                 Component.literal("§7all sellable items inside.")
                         .withStyle(s -> s.withItalic(false)),

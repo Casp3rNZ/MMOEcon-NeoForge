@@ -477,8 +477,8 @@ import java.util.List;
         }
 
         public static String formatMoney(float amount) {
-            if (amount >= 1_000_000) return String.format("%.1fM", amount / 1_000_000);
-            if (amount >= 1_000)     return String.format("%.1fK", amount / 1_000);
+            if (amount >= 1_000_000) return String.format("%.3fM", amount / 1_000_000);
+            if (amount >= 1_000)     return String.format("%.3fK", amount / 1_000);
             return String.format("%.2f", amount);
         }
 

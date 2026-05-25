@@ -24,6 +24,7 @@ public class MMOEcon {
         NeoForge.EVENT_BUS.register(EconomyCommands.class);
         NeoForge.EVENT_BUS.register(PlayerBalanceManager.class);
         NeoForge.EVENT_BUS.register(SellWandListener.class);
+        NeoForge.EVENT_BUS.register(PlaytimeRewardListener.class);
         NeoForge.EVENT_BUS.register(MMOEcon.class);
     }
 
