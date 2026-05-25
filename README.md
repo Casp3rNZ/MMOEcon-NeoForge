@@ -57,5 +57,5 @@ If you don't want to write a shop JSON file from scratch, an example one with be
 
 ```
 
-The shop does support any modded items supported by the server, just make sure the IDs are written to use the mods namespace ei: "create:andesite_ingot".
+The shop will support any modded items supported by the server its running on, just make sure the IDs are written to use the mods namespace ei: "create:andesite_ingot".
 However, there is no custom NBT tag support currently for potions, Trinkets, backpacks or any other item variants that use a single item ID.
