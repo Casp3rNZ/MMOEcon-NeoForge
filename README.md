@@ -9,7 +9,7 @@ It is completely server-side and does NOT need to be installed on any clients in
 
 
 ### Download
-![Static Badge](https://img.shields.io/badge/GitHub%20Release-Latest-blue?style=for-the-badge&logo=github&logoSize=auto)(https://github.com/Casp3rNZ/MMOEcon-NeoForge/releases/latest)
+[![Static Badge](https://img.shields.io/badge/GitHub%20Release-Latest-blue?style=for-the-badge&logo=github&logoSize=auto)](https://github.com/Casp3rNZ/MMOEcon-NeoForge/releases/latest)
 
 
 
