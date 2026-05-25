@@ -9,8 +9,8 @@ It is completely server-side and does NOT need to be installed on any clients in
 
 
 ### Download
-[[![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/Casp3rNZ/MMOEcon-NeoForge)](https://github.com/Casp3rNZ/MMOEcon-NeoForge/releases/latest)](https://img.shields.io/badge/GitHub%20Release-Latest-blue?style=for-the-badge&logo=github&logoSize=auto&link=https%3A%2F%2Fgithub.com%2FCasp3rNZ%2FMMOEcon-NeoForge%2Freleases%2Flatest
-)
+![Static Badge](https://img.shields.io/badge/GitHub%20Release-Latest-blue?style=for-the-badge&logo=github&logoSize=auto&link=https%3A%2F%2Fgithub.com%2FCasp3rNZ%2FMMOEcon-NeoForge%2Freleases%2Flatest)
+
 
 ### Features:
 - [x] Manages persistent player balances server-side.
