@@ -7,7 +7,8 @@ This mod is a NeoForge port of my original MMOEcon mod for Fabric, with a new an
 It is completely server-side and does NOT need to be installed on any clients in order to function in multiplayer.
 
 ### Download
-[![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/Casp3rNZ/MMOEcon-NeoForge)]([https://github.com/username/repo/releases](https://github.com/Casp3rNZ/MMOEcon-NeoForge/releases/))
+[![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/Casp3rNZ/MMOEcon-NeoForge)]
+(https://github.com/Casp3rNZ/MMOEcon-NeoForge/releases/)
 
 ### Features:
 - [x] Manages persistent player balances server-side.
