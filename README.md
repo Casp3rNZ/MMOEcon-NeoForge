@@ -40,8 +40,8 @@ If you don't want to write a shop JSON file from scratch, an example one with be
       "name": "Building Blocks",
       "representativeItem": "minecraft:grass_block",
       "items": [
-        { "id": "minecraft:stone",              "buyPrice": 3.0,   "sellPrice": 0.3  },
-        { "id": "minecraft:grass_block",        "buyPrice": 1.5,   "sellPrice": 0.1  }
+        { "id": "minecraft:stone", "buyPrice": 3.0, "sellPrice": 0.3  },
+        { "id": "minecraft:grass_block", "buyPrice": 1.5, "sellPrice": 0.1  }
       ]
     },
     {
@@ -49,7 +49,7 @@ If you don't want to write a shop JSON file from scratch, an example one with be
       "representativeItem": "minecraft:diamond",
       "items": [
         { "id": "minecraft:iron_ingot", "buyPrice": 30.0,"sellPrice": 3 },
-        { "id": "minecraft:diamond",    "buyPrice": 200.0,"sellPrice": 20.0  }
+        { "id": "minecraft:diamond", "buyPrice": 200.0,"sellPrice": 20.0  }
       ]
     }
   ]
