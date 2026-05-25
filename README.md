@@ -32,7 +32,7 @@ It is completely server-side and does NOT need to be installed on any clients in
 The admin GUI shop is dynamically populated by /config/mmoecon/MMOShop.json.
 If you don't want to write a shop JSON file from scratch, an example one with be generated the first time the mod runs to get you started.
 
-#### Example JSON Structure
+#### Example MMOShop.JSON Structure
 ```
 {
   "categories": [
@@ -56,3 +56,6 @@ If you don't want to write a shop JSON file from scratch, an example one with be
 }
 
 ```
+
+The shop does support any modded items supported by the server, just make sure the IDs are written to use the mods namespace ei: "create:andesite_ingot".
+However, there is no custom NBT tag support currently for potions, Trinkets, backpacks or any other item variants that use a single item ID.
