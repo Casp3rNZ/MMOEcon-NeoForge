@@ -39,6 +39,7 @@ The admin GUI shop is dynamically populated by /config/mmoecon/MMOShop.json.
 If you don't want to write a shop JSON file from scratch, an example one with be generated the first time the mod runs to get you started.
 
 #### Example MMOShop.JSON Structure
+The shop will support any modded items supported by the server its running on.
 ```
 {
   "categories": [
@@ -68,6 +69,4 @@ If you don't want to write a shop JSON file from scratch, an example one with be
 }
 
 ```
-
-The shop will support any modded items supported by the server its running on, just make sure the IDs are written to use the mods namespace ei: "create:andesite_ingot".
 The Sell Wand is currently the only supported "special" item.
