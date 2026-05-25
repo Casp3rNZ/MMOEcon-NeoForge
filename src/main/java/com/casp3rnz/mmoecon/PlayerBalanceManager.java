@@ -1,4 +1,4 @@
-package com.mmoecon.casp3rnz;
+package com.casp3rnz.mmoecon;
 
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.loading.FMLPaths;
@@ -104,10 +104,9 @@ public class PlayerBalanceManager {
      * Returns true if the player had sufficient funds, false otherwise.
      * Does NOT deduct if insufficient — callers should check first with hasFunds.
      */
-    public static boolean subtractBalance(UUID uuid, float amount) {
-        if(!hasFunds(uuid, amount)) return false;
+    public static void subtractBalance(UUID uuid, float amount) {
+        if(!hasFunds(uuid, amount)) return;
         setBalance(uuid, getBalance(uuid) - amount);
-        return true;
     }
 
     public static boolean hasFunds(UUID uuid, float amount) {

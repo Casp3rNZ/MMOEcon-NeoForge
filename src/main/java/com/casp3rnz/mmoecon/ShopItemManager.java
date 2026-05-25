@@ -1,4 +1,4 @@
-package com.mmoecon.casp3rnz;
+package com.casp3rnz.mmoecon;
 
 import com.google.gson.*;
 import net.neoforged.fml.loading.FMLPaths;
@@ -76,7 +76,8 @@ public class ShopItemManager {
                         String id = itemJson.get("id").getAsString();
                         Float buyPrice  = itemJson.has("buyPrice")  ? itemJson.get("buyPrice").getAsFloat()  : null;
                         Float sellPrice = itemJson.has("sellPrice") ? itemJson.get("sellPrice").getAsFloat() : null;
-                        items.add(new ShopItem(id, buyPrice, sellPrice));
+                        String specialItem = itemJson.has("special") ? itemJson.get("special").getAsString() : null;
+                        items.add(new ShopItem(id, buyPrice, sellPrice, specialItem));
                     } catch (Exception e) {
                         // malformed item — skip silently
                     }
@@ -203,9 +204,10 @@ public class ShopItemManager {
 
 
     // Data Classes
-    public record ShopItem(String id, Float buyPrice, Float sellPrice) {
+    public record ShopItem(String id, Float buyPrice, Float sellPrice, String special) {
         public boolean canBuy() { return buyPrice != null; }
         public boolean canSell() { return sellPrice != null; }
+        public boolean isSpecial() { return special != null; }
     }
 
     public record ShopCategory(String name, String representativeItem, List<ShopItem> items) {}

@@ -1,4 +1,4 @@
-package com.mmoecon.casp3rnz;
+package com.casp3rnz.mmoecon;
 
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -88,7 +88,7 @@ public final class SellCommand {
         for (ItemStack armour : player.getInventory().armor) {
             if (armour == stack) return true;
         }
-        return player.getInventory().offhand.get(0) == stack;
+        return player.getInventory().offhand.getFirst() == stack;
     }
 
     private SellCommand() {}

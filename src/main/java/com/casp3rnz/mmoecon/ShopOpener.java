@@ -1,4 +1,4 @@
-package com.mmoecon.casp3rnz;
+package com.casp3rnz.mmoecon;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;

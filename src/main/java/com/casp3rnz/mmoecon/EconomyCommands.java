@@ -1,4 +1,4 @@
-package com.mmoecon.casp3rnz;
+package com.casp3rnz.mmoecon;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.Command;
@@ -86,6 +86,17 @@ public final class EconomyCommands {
                     ServerPlayer player = ctx.getSource().getPlayerOrException();
                     return SellCommand.sellInventory(player);
                 })));
+
+        // /sellwand give — op-only, gives a sell wand to the player
+        dispatcher.register(Commands.literal("sellwand")
+                .requires(src -> src.hasPermission(2))
+                .then(Commands.literal("give")
+                        .executes(ctx -> {
+                            ServerPlayer player = ctx.getSource().getPlayerOrException();
+                            player.getInventory().add(SellWand.create());
+                            ctx.getSource().sendSuccess(() -> Component.literal("§aGiven a Sell Wand."), false);
+                            return Command.SINGLE_SUCCESS;
+                        })));
     }
 
     // ── Command implementations ───────────────────────────────────────────────
@@ -106,7 +117,7 @@ public final class EconomyCommands {
 
         for (int i = 0; i < Math.min(10, sorted.size()); i++) {
             Map.Entry<UUID, Float> entry = sorted.get(i);
-            Optional<GameProfile> profile = server.getProfileCache().get(entry.getKey());
+            Optional<GameProfile> profile = Objects.requireNonNull(server.getProfileCache()).get(entry.getKey());
             String name = profile.map(GameProfile::getName).orElse("unknown");
             final int rank = i + 1;
             final String display = rank + ". " + name + ": $" + ShopMenu.formatMoney(entry.getValue());

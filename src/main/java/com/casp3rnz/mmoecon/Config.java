@@ -1,4 +1,4 @@
-package com.mmoecon.casp3rnz;
+package com.casp3rnz.mmoecon;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
@@ -18,9 +18,9 @@ public final class Config {
     public static final ModConfigSpec SPEC;
 
     public static final ModConfigSpec.BooleanValue ENABLE_PLAYTIME_REWARDS;
-    public static final ModConfigSpec.DoubleValue PLAYTIME_REWARD;
+    //public static final ModConfigSpec.DoubleValue PLAYTIME_REWARD;
     // Interval in ticks (36000 = 30 min)
-    public static final ModConfigSpec.LongValue PLAYTIME_INTERVAL;
+    //public static final ModConfigSpec.LongValue PLAYTIME_INTERVAL;
 
     // Kill Rewards (todo in later update)
     //public static final ModConfigSpec.BooleanValue ENABLE_KILL_REWARDS_PVE;
@@ -43,13 +43,13 @@ public final class Config {
                 .comment("Awards money to players on a timed interval while they are online.")
                 .define("enablePlaytimeRewards", true);
 
-        PLAYTIME_REWARD = builder
-                .comment("Amount of money awarded per playtime interval.")
-                .defineInRange("playtimeReward", 200.0, 0.0, Double.MAX_VALUE);
+        //PLAYTIME_REWARD = builder
+        //        .comment("Amount of money awarded per playtime interval.")
+        //        .defineInRange("playtimeReward", 200.0, 0.0, Double.MAX_VALUE);
 
-        PLAYTIME_INTERVAL = builder
-                .comment("Ticks between playtime reward payouts.")
-                .defineInRange("playtimeInterval", 36000L, 0L, Long.MAX_VALUE);
+        //PLAYTIME_INTERVAL = builder
+        //        .comment("Ticks between playtime reward payouts.")
+        //        .defineInRange("playtimeInterval", 36000L, 0L, Long.MAX_VALUE);
 
         STARTING_AMOUNT = builder
                 .comment("Starting balance for new players.")

@@ -1,4 +1,4 @@
-package com.mmoecon.casp3rnz;
+package com.casp3rnz.mmoecon;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -23,6 +23,7 @@ public class MMOEcon {
         // Register NeoForge game event listeners
         NeoForge.EVENT_BUS.register(EconomyCommands.class);
         NeoForge.EVENT_BUS.register(PlayerBalanceManager.class);
+        NeoForge.EVENT_BUS.register(SellWandListener.class);
         NeoForge.EVENT_BUS.register(MMOEcon.class);
     }
 

@@ -1,4 +1,4 @@
-package com.mmoecon.casp3rnz;
+package com.casp3rnz.mmoecon;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -16,11 +16,10 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.ItemLore;
+import net.minecraft.world.inventory.Slot;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 
 /**
      * Server-side container menu for the shop GUI.
@@ -68,7 +67,7 @@ import java.util.Stack;
             for (int row = 0; row < 6; row++) {
                 for (int col = 0; col < 9; col++) {
                     int index = col + row * 9;
-                    this.addSlot(new net.minecraft.world.inventory.Slot(shopInventory, index, 8 + col * 18, 18 + row * 18) {
+                    this.addSlot(new Slot(shopInventory, index, 8 + col * 18, 18 + row * 18) {
                         @Override public boolean mayPickup(Player p) { return false; }
                         @Override public boolean mayPlace(ItemStack s) { return false; }
                     });
@@ -78,12 +77,12 @@ import java.util.Stack;
             // Player inventory
             for (int row = 0; row < 3; row++) {
                 for (int col = 0; col < 9; col++) {
-                    this.addSlot(new net.minecraft.world.inventory.Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 140 + row * 18));
+                    this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 140 + row * 18));
                 }
             }
             // Hotbar
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new net.minecraft.world.inventory.Slot(playerInventory, col, 8 + col * 18, 198));
+                this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 198));
             }
 
             populateView();
@@ -170,7 +169,7 @@ import java.util.Stack;
             if (selling && !shopItem.canSell()) return;
             if (!selling && !shopItem.canBuy()) return;
 
-            session.pendingItem = displayStack.getItem();
+            session.pendingShopItem = shopItem;
             session.isSelling   = selling;
             session.resetQuantity();
             session.navigateTo(ShopViews.QUANTITY_PICKER);
@@ -209,24 +208,26 @@ import java.util.Stack;
         // ── Transaction execution ─────────────────────────────────────────────────
 
         private void executeTransaction() {
-            String itemId = BuiltInRegistries.ITEM.getKey(session.pendingItem).toString();
-            ShopItemManager.ShopItem shopItem = ShopItemManager.findItem(itemId);
+            ShopItemManager.ShopItem shopItem = session.pendingShopItem;
             if (shopItem == null) return;
 
             int qty = session.quantity;
+            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(shopItem.id()));
 
             if (session.isSelling) {
+                // selling special items not supported
+                if (shopItem.isSpecial()) return;
                 // Verify the player has enough of the item
-                int held = countItemInInventory(session.pendingItem);
+                int held = countItemInInventory(item);
                 if (held < qty) {
-                    player.sendSystemMessage(Component.literal("You don't have " + qty + "x " + itemName(session.pendingItem) + "."));
+                    player.sendSystemMessage(Component.literal("You don't have " + qty + "x " + itemName(item) + "."));
                     return;
                 }
                 float total = shopItem.sellPrice() * qty;
-                removeItemsFromInventory(session.pendingItem, qty);
+                removeItemsFromInventory(item, qty);
                 PlayerBalanceManager.addBalance(player.getUUID(), total);
-                player.sendSystemMessage(Component.literal("Sold " + qty + "x " + itemName(session.pendingItem) + " for $" + formatMoney(total)));
-                TransactionLogger.log(player.getName().getString() + " sold " + qty + " " + itemName(session.pendingItem) + " for $" + formatMoney(total));
+                player.sendSystemMessage(Component.literal("Sold " + qty + "x " + itemName(item) + " for $" + formatMoney(total)));
+                TransactionLogger.log(player.getName().getString() + " sold " + qty + " " + itemName(item) + " for $" + formatMoney(total));
             } else {
                 float total = shopItem.buyPrice() * qty;
                 if (!PlayerBalanceManager.hasFunds(player.getUUID(), total)) {
@@ -234,35 +235,46 @@ import java.util.Stack;
                     return;
                 }
                 // Check inventory space
-                if (!hasInventorySpace(session.pendingItem, qty)) {
+                if (!hasInventorySpace(item, qty)) {
                     player.sendSystemMessage(Component.literal("Not enough inventory space."));
                     return;
                 }
                 PlayerBalanceManager.subtractBalance(player.getUUID(), total);
-                giveItems(session.pendingItem, qty);
-                player.sendSystemMessage(Component.literal("Bought " + qty + "x " + itemName(session.pendingItem) + " for $" + formatMoney(total)));
-                TransactionLogger.log(player.getName().getString() + " bought " + qty + " " + itemName(session.pendingItem) + " for $" + formatMoney(total));
+                String specialItemName = null;
+                if(shopItem.isSpecial()) {
+                    // give special items
+                    for(int i = 0; i< session.quantity; i++) {
+                        ItemStack displayStack = createDisplayStack(shopItem);
+                        player.getInventory().add(displayStack);
+                        specialItemName = displayStack.getItem().getName(displayStack).getString();
+                    }
+                } else {
+                    giveItems(item, qty);
+                }
+                player.sendSystemMessage(Component.literal("Bought " + qty + "x " + (specialItemName != null ? specialItemName : itemName(item)) + " for $" + formatMoney(total)));
+                TransactionLogger.log(player.getName().getString() + " bought " + qty + " " + (specialItemName != null ? specialItemName : itemName(item)) + " for $" + formatMoney(total));
             }
 
             playTransactionSound();
         }
 
         private void executeSellAll() {
-            String itemId = BuiltInRegistries.ITEM.getKey(session.pendingItem).toString();
-            ShopItemManager.ShopItem shopItem = ShopItemManager.findItem(itemId);
+            ShopItemManager.ShopItem shopItem = session.pendingShopItem;
             if (shopItem == null || !shopItem.canSell()) return;
+            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(shopItem.id()));
+            String itemId = BuiltInRegistries.ITEM.getKey(item).toString();
 
-            int qty = countItemInInventory(session.pendingItem);
+            int qty = countItemInInventory(item);
             if (qty == 0) {
-                player.sendSystemMessage(Component.literal("You have no " + itemName(session.pendingItem) + " to sell."));
+                player.sendSystemMessage(Component.literal("You have no " + itemName(item) + " to sell."));
                 return;
             }
 
             float total = shopItem.sellPrice() * qty;
-            removeItemsFromInventory(session.pendingItem, qty);
+            removeItemsFromInventory(item, qty);
             PlayerBalanceManager.addBalance(player.getUUID(), total);
-            player.sendSystemMessage(Component.literal("Sold all " + qty + "x " + itemName(session.pendingItem) + " for $" + formatMoney(total)));
-            TransactionLogger.log(player.getName().getString() + " sold all " + qty + " " + itemName(session.pendingItem) + " for $" + formatMoney(total));
+            player.sendSystemMessage(Component.literal("Sold all " + qty + "x " + itemName(item) + " for $" + formatMoney(total)));
+            TransactionLogger.log(player.getName().getString() + " sold all " + qty + " " + itemName(item) + " for $" + formatMoney(total));
             playTransactionSound();
         }
 
@@ -382,9 +394,8 @@ import java.util.Stack;
                 if (itemIndex >= items.size()) break;
 
                 ShopItemManager.ShopItem shopItem = items.get(itemIndex);
-                Item mc = BuiltInRegistries.ITEM.get(ResourceLocation.parse(shopItem.id()));
-
-                ItemStack stack = new ItemStack(mc);
+                ItemStack stack = createDisplayStack(shopItem);
+                if(stack.isEmpty()) continue;
                 // Keep the vanilla item name but mark it as custom so it renders white (not italic)
                 stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
                         Component.literal(stack.getHoverName().getString())
@@ -416,11 +427,13 @@ import java.util.Stack;
         }
 
         private void populateQuantityPicker() {
-            String itemLabel = itemName(session.pendingItem);
+            ShopItemManager.ShopItem shopItem = session.pendingShopItem;
+            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(shopItem.id()));
             String action    = session.isSelling ? "Selling" : "Buying";
-
+            ItemStack displayStack = createDisplayStack(shopItem);
             // Display item in the centre
-            shopInventory.setItem(13, new ItemStack(session.pendingItem));
+            shopInventory.setItem(13, displayStack);
+            String itemLabel = displayStack.getItem().getName(displayStack).getString();
 
             // Quantity display
             shopInventory.setItem(22, namedStack(Items.PAPER, action + " x" + session.quantity));
@@ -476,5 +489,16 @@ import java.util.Stack;
 
         private void playTransactionSound() {
             player.playNotifySound(SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.7f, 1.0f);
+        }
+
+        public static ItemStack createDisplayStack(ShopItemManager.ShopItem shopItem) {
+            if(shopItem.isSpecial()) {
+                switch(shopItem.special()) {
+                    case "sell_wand": return SellWand.create();
+
+                }
+            }
+            Item mc = BuiltInRegistries.ITEM.get(ResourceLocation.parse(shopItem.id()));
+            return new ItemStack(mc);
         }
     }

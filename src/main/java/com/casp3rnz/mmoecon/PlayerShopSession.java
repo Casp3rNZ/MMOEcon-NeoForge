@@ -1,6 +1,4 @@
-package com.mmoecon.casp3rnz;
-
-import net.minecraft.world.item.Item;
+package com.casp3rnz.mmoecon;
 
 /**
  * Holds all per-player shop session state.
@@ -12,7 +10,7 @@ public class PlayerShopSession {
     public ShopViews view = ShopViews.CATEGORY_LIST;
     public ShopItemManager.ShopCategory currentCategory = null;
     public int currentPage = 0;
-    public Item pendingItem = null;
+    public ShopItemManager.ShopItem pendingShopItem = null;
     public boolean isSelling = false;
     public int quantity = 1;
 

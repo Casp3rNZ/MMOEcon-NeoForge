@@ -1,4 +1,4 @@
-package com.mmoecon.casp3rnz;
+package com.casp3rnz.mmoecon;
 
 /**
  * Represents which "page" of the shop GUI the player is currently viewing.
