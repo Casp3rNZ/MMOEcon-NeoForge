@@ -1,0 +1,13 @@
+{
+  "itemGroup.mmoecon": "Example Mod Tab",
+  "block.mmoecon.example_block": "Example Block",
+  "item.mmoecon.example_item": "Example Item",
+
+  "mmoecon.configuration.title": "MMO Econ Configs",
+  "mmoecon.configuration.section.mmoecon.common.toml": "MMO Econ Configs",
+  "mmoecon.configuration.section.mmoecon.common.toml.title": "MMO Econ Configs",
+  "mmoecon.configuration.items": "Item List",
+  "mmoecon.configuration.logDirtBlock": "Log Dirt Block",
+  "mmoecon.configuration.magicNumberIntroduction": "Magic Number Text",
+  "mmoecon.configuration.magicNumber": "Magic Number"
+}
