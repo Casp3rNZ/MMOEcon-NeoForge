@@ -9,19 +9,19 @@ This mod is a NeoForge port of my original MMOEcon mod for Fabric, with a new an
 It is completely server-side and does NOT need to be installed on any clients in order to function in multiplayer.
 
 ### Features:
-- Manages persistent player balances server-side.
-- Completely customiseable admin GUI shop.
-- Player to player payments.
-- Sell hand / Inventory.
-- A balance Leaderboard.
+-[x] Manages persistent player balances server-side.
+-[x] Completely customiseable admin GUI shop.
+-[x] Player to player payments.
+-[x] Sell hand / Inventory.
+-[x] A balance Leaderboard.
 
 ### Planned Future Features
-- Playtime balance rewards.
-- Player / Mob kill rewards.
-- Player to Player trading / Auction house.
-- Player run Chestshops.
-- Sell wands.
-- Custom NBT tag support for shop items.
+-[] Playtime balance rewards.
+-[] Player / Mob kill rewards.
+-[] Player to Player trading / Auction house.
+-[] Player run Chestshops.
+-[] Sell wands.
+-[] Custom NBT tag support for shop items.
 
 ### Commands
 - /bal, /money - Displays the player's balance.
