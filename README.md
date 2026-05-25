@@ -51,11 +51,17 @@ If you don't want to write a shop JSON file from scratch, an example one with be
       ]
     },
     {
-      "name": "Ores & Gems",
-      "representativeItem": "minecraft:diamond",
+      "name": "Modded Items",
+      "representativeItem": "create:cogwheel",
       "items": [
-        { "id": "minecraft:iron_ingot", "buyPrice": 30.0,"sellPrice": 3 },
-        { "id": "minecraft:diamond", "buyPrice": 200.0,"sellPrice": 20.0  }
+        { "id": "create:cogwheel", "buyPrice": 10.0 }
+      ]
+    }
+    {
+      "name": "Custom Server-side Items",
+      "representativeItem": "minecraft:emerald",
+      "items": [
+        { "id": "mmoecon:sell_wand", "special":"sell_wand", "buyPrice": 35000.0 }
       ]
     }
   ]
