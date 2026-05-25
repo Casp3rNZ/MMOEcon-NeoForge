@@ -5,8 +5,11 @@
 [![Static Badge](https://img.shields.io/badge/GitHub%20Release-Latest-blue?style=for-the-badge&logo=github&logoSize=auto)](https://github.com/Casp3rNZ/MMOEcon-NeoForge/releases/latest)
 [![Static Badge](https://img.shields.io/badge/CurseForge-Mod%20Page-orange?style=for-the-badge&logo=curseforge&logoSize=auto)](#)
 
-<img width="1920" height="1080" alt="2026-05-25_13 36 10" src="https://github.com/user-attachments/assets/9052ee4c-bc6f-41f2-9069-41c98b653835" />
-<img width="1920" height="1080" alt="2026-05-25_13 36 24" src="https://github.com/user-attachments/assets/429baea7-4c26-403c-8405-bada90beff46" />
+<img width="1920" height="1080" alt="2026-05-25_20 28 38" src="https://github.com/user-attachments/assets/bd5c37a4-c01f-4911-bc19-74724f32b9b7" />
+<img width="1920" height="1080" alt="2026-05-25_20 28 55" src="https://github.com/user-attachments/assets/ca0f7d7e-949e-40a2-b680-ae73afb5fea4" />
+<img width="1920" height="1080" alt="2026-05-25_20 29 08" src="https://github.com/user-attachments/assets/cf43a6d5-2f1a-44b1-893f-91c79b90e64e" />
+<img width="459" height="244" alt="2026-05-25_20 26 49" src="https://github.com/user-attachments/assets/49936127-4047-4dcd-a4e0-598f6a6ced39" />
+
 Currently supports only Minecraft 1.21.1 NeoForge.
 This mod is a NeoForge port of my original MMOEcon mod for Fabric, with a new and improved codebase.
 It is completely server-side and does NOT need to be installed on any clients in order to function in multiplayer.
