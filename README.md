@@ -31,10 +31,10 @@ It is completely server-side and does NOT need to be installed on any clients in
 - /bal, /money - Displays the player's balance.
 - /pay <playername> <amount> - Pays money to player from your balance.
 - /bal top - Displays a list of the server's richest players.
-- /shop - opens the GUI shop.
-- /sell hand - sells the currently held item, if its listed a valid sellable in the GUI shop.
-- /sell inv - sells every item in your inventory that is listed as a valid sellable in the GUI shop.
-- /sellwand give - (OP ONLY) gives the player a sell wand.
+- /shop - Opens the GUI shop.
+- /sell hand - Sells the currently held item, if its listed a valid sellable in the GUI shop.
+- /sell inv - Sells every item in your inventory that is listed as a valid sellable in the GUI shop.
+- /sellwand give - (OP ONLY) Gives the player a sell wand.
 
 ### Customising the Shop
 The admin GUI shop is dynamically populated by /config/mmoecon/MMOShop.json.
