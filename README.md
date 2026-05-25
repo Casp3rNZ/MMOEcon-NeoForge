@@ -20,9 +20,9 @@ It is completely server-side and does NOT need to be installed on any clients in
 - [x] Sell hand / Inventory.
 - [x] A balance Leaderboard.
 - [x] Sell wands.
+- [x] Playtime balance rewards.
 
 ### Planned Features
-- [ ] Playtime balance rewards.
 - [ ] Player / Mob kill rewards.
 - [ ] Player to Player trading / Auction house.
 - [ ] Player run Chestshops.
