@@ -11,10 +11,8 @@ import java.util.logging.SimpleFormatter;
 
 /**
  * Logs buy/sell transactions to config/mmoecon/transactions.log.
- *
  * Uses java.util.logging (separate from the SLF4J LOGGER) so transaction history
  * lives in its own file rather than being mixed into the server log.
- *
  * The logger is initialised lazily on first use so FMLPaths is guaranteed ready.
  */
 public final class TransactionLogger {

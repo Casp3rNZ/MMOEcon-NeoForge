@@ -1,5 +1,6 @@
 package com.casp3rnz.mmoecon;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -17,6 +18,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.component.ItemLore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -88,7 +90,7 @@ import java.util.List;
             populateView();
         }
 
-        // ── AbstractContainerMenu overrides ──────────────────────────────────────
+        // AbstractContainerMenu overrides
 
         @Override
         public boolean stillValid(Player player) {
@@ -109,7 +111,7 @@ import java.util.List;
             routeClick(slotId, button);
         }
 
-        // ── Click routing ─────────────────────────────────────────────────────────
+        // Click routing
 
         /**
          * Dispatch the click to the correct handler based on the current view.
@@ -123,7 +125,7 @@ import java.util.List;
             }
         }
 
-        // ── View: CATEGORY_LIST ───────────────────────────────────────────────────
+        // View: CATEGORY_LIST
 
         private void handleCategoryListClick(int slot) {
             List<ShopItemManager.ShopCategory> cats = ShopItemManager.getCategories();
@@ -135,7 +137,7 @@ import java.util.List;
             }
         }
 
-        // ── View: ITEM_LIST ───────────────────────────────────────────────────────
+        // View: ITEM_LIST
 
         private void handleItemListClick(int slot, int button) {
             if (slot == NAV_BACK) {
@@ -176,7 +178,7 @@ import java.util.List;
             populateView();
         }
 
-        // ── View: QUANTITY_PICKER ─────────────────────────────────────────────────
+        // View: QUANTITY_PICKER
 
         private void handleQuantityPickerClick(int slot) {
             switch (slot) {
@@ -205,7 +207,7 @@ import java.util.List;
             }
         }
 
-        // ── Transaction execution ─────────────────────────────────────────────────
+        // Transaction execution
 
         private void executeTransaction() {
             ShopItemManager.ShopItem shopItem = session.pendingShopItem;
@@ -278,7 +280,7 @@ import java.util.List;
             playTransactionSound();
         }
 
-        // ── Inventory helpers ─────────────────────────────────────────────────────
+        // Inventory helpers
 
         private int countItemInInventory(Item item) {
             int count = 0;
@@ -323,7 +325,7 @@ import java.util.List;
             }
         }
 
-        // ── View population ───────────────────────────────────────────────────────
+        // View population
 
         /** Rebuild the shop inventory to match the current session view. */
         private void populateView() {
@@ -346,7 +348,7 @@ import java.util.List;
             String playerName = player.getName().getString();
             ItemStack lantern = new ItemStack(Items.LANTERN);
 
-            lantern.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+            lantern.set(DataComponents.CUSTOM_NAME,
                     Component.literal("§6Welcome, " + playerName + "!")
                             .withStyle(s -> s.withItalic(false)));
 
@@ -355,13 +357,13 @@ import java.util.List;
             lore.add(Component.literal("§7Your Balance: §a$" + formatMoney(balance))
                     .withStyle(s -> s.withItalic(false)));
 
-            lantern.set(net.minecraft.core.component.DataComponents.LORE,
-                    new net.minecraft.world.item.component.ItemLore(lore));
+            lantern.set(DataComponents.LORE,
+                    new ItemLore(lore));
 
             shopInventory.setItem(PERSISTENT_ICON_1, lantern);
 
             ItemStack paper = new ItemStack(Items.PAPER);
-            paper.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+            paper.set(DataComponents.CUSTOM_NAME,
                     Component.literal("§bMod Developed by Casp3rNZ!")
                             .withStyle(s -> s.withItalic(false)));
             shopInventory.setItem(PERSISTENT_ICON_2 + 1, paper);
@@ -379,7 +381,7 @@ import java.util.List;
                 ShopItemManager.ShopCategory cat = cats.get(i);
                 Item repItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(cat.representativeItem()));
                 ItemStack icon = new ItemStack(repItem);
-                icon.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal(cat.name()));
+                icon.set(DataComponents.CUSTOM_NAME, Component.literal(cat.name()));
                 shopInventory.setItem(i, icon);
             }
         }
@@ -460,11 +462,11 @@ import java.util.List;
             shopInventory.setItem(NAV_BACK, namedStack(Items.BARRIER, "§c← Back"));
         }
 
-        // ── Utility ───────────────────────────────────────────────────────────────
+        // Utility
 
         private static ItemStack namedStack(Item item, String name) {
             ItemStack stack = new ItemStack(item);
-            stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal(name));
+            stack.set(DataComponents.CUSTOM_NAME, Component.literal(name));
             return stack;
         }
 

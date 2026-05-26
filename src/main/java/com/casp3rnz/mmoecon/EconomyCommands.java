@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -99,9 +100,9 @@ public final class EconomyCommands {
                         })));
     }
 
-    // ── Command implementations ───────────────────────────────────────────────
+    // Command implementations
 
-    private static int showBalance(CommandSourceStack src) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+    private static int showBalance(CommandSourceStack src) throws CommandSyntaxException {
         ServerPlayer player = src.getPlayerOrException();
         float balance = PlayerBalanceManager.getBalance(player.getUUID());
         src.sendSuccess(() -> Component.literal("Your balance: $" + ShopMenu.formatMoney(balance)), false);
@@ -127,7 +128,7 @@ public final class EconomyCommands {
     }
 
     private static int executePay(CommandSourceStack src, String targetName, float amount)
-            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+            throws CommandSyntaxException {
 
         ServerPlayer sender = src.getPlayerOrException();
         ServerPlayer target = src.getServer().getPlayerList().getPlayerByName(targetName);
