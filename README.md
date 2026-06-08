@@ -7,7 +7,6 @@
 [![Static Badge](https://img.shields.io/badge/Modrinth-Mod%20Page-green?style=for-the-badge&logo=modrinth&logoSize=auto)](https://modrinth.com/mod/mmo-econ)
 
 ### Screenshots
-| ---------------------- | ---------------------- |
 | <img width="1920" height="1080" alt="2026-05-25_20 28 38" src="https://github.com/user-attachments/assets/bd5c37a4-c01f-4911-bc19-74724f32b9b7" /> | <img width="1920" height="1080" alt="2026-05-25_20 28 55" src="https://github.com/user-attachments/assets/ca0f7d7e-949e-40a2-b680-ae73afb5fea4" /> |
 | <img width="1920" height="1080" alt="2026-05-25_20 29 08" src="https://github.com/user-attachments/assets/cf43a6d5-2f1a-44b1-893f-91c79b90e64e" /> | <img width="459" height="244" alt="2026-05-25_20 26 49" src="https://github.com/user-attachments/assets/49936127-4047-4dcd-a4e0-598f6a6ced39" /> |
 
