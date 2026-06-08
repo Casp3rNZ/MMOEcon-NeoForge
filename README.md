@@ -4,6 +4,7 @@
 ### Download
 [![Static Badge](https://img.shields.io/badge/GitHub%20Release-Latest-blue?style=for-the-badge&logo=github&logoSize=auto)](https://github.com/Casp3rNZ/MMOEcon-NeoForge/releases/latest)
 [![Static Badge](https://img.shields.io/badge/CurseForge-Mod%20Page-orange?style=for-the-badge&logo=curseforge&logoSize=auto)](https://www.curseforge.com/minecraft/mc-mods/mmo-econ)
+[![Static Badge](https://img.shields.io/badge/CurseForge-Mod%20Page-orange?style=for-the-badge&logo=curseforge&logoSize=auto)](https://modrinth.com/mod/mmo-econ)
 | Screenshots              |                |
 | ---------------------- | ---------------------- |
 | <img width="1920" height="1080" alt="2026-05-25_20 28 38" src="https://github.com/user-attachments/assets/bd5c37a4-c01f-4911-bc19-74724f32b9b7" /> | <img width="1920" height="1080" alt="2026-05-25_20 28 55" src="https://github.com/user-attachments/assets/ca0f7d7e-949e-40a2-b680-ae73afb5fea4" /> |
