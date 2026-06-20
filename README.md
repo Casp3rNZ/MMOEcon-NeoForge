@@ -40,7 +40,6 @@ It is completely server-side and does NOT need to be installed on any clients in
 
 ### Customising the Shop
 The admin GUI shop is dynamically populated by /config/mmoecon/MMOShop.json.
-If you don't want to write a shop JSON file from scratch, an example one with be generated the first time the mod runs to get you started.
 If you don't want to write a shop JSON file from scratch, an example one will be generated the first time the mod runs to get you started.
 
 #### Example MMOShop.JSON Structure
@@ -57,7 +56,7 @@ The shop will support any modded items supported by the server its running on.
      ]
    },
    {
-     "name": "Modded Items",
+     "name": "&6&lModded Items",
      "representativeItem": "create:cogwheel",
      "items": [
        { "id": "create:cogwheel", "buyPrice": 10.0 }
@@ -75,3 +74,19 @@ The shop will support any modded items supported by the server its running on.
 
 ```
 The Sell Wand is currently the only supported "special" item.
+
+#### Styling Category Names
+Category names support Minecraft's standard `&` (or `§`) color and formatting codes, so you can colour and style them however you like. 
+For example, `"name": "&6&lModded Items"` renders as a bold gold "Modded Items".
+If you don't supply any codes, the name is shown as normal white text (no forced italics).
+
+| Code | Colour | Code | Colour | Code | Format |
+| ---- | ------ | ---- | ------ | ---- | ------ |
+| `&0` | Black | `&8` | Dark Gray | `&k` | Obfuscated |
+| `&1` | Dark Blue | `&9` | Blue | `&l` | Bold |
+| `&2` | Dark Green | `&a` | Green | `&m` | Strikethrough |
+| `&3` | Dark Aqua | `&b` | Aqua | `&n` | Underline |
+| `&4` | Dark Red | `&c` | Red | `&o` | Italic |
+| `&5` | Dark Purple | `&d` | Light Purple | `&r` | Reset |
+| `&6` | Gold | `&e` | Yellow | | |
+| `&7` | Gray | `&f` | White | | |
