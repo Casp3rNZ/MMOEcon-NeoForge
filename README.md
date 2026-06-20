@@ -36,6 +36,7 @@ It is completely server-side and does NOT need to be installed on any clients in
 - /sell hand - Sells the currently held item, if its listed a valid sellable in the GUI shop.
 - /sell inv - Sells every item in your inventory that is listed as a valid sellable in the GUI shop.
 - /sellwand give - (OP ONLY) Gives the player a sell wand.
+- /shop reload - Reloads MMOShop.json
 
 ### Customising the Shop
 The admin GUI shop is dynamically populated by /config/mmoecon/MMOShop.json.
