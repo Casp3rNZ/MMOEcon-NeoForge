@@ -1,10 +1,12 @@
 package com.casp3rnz.mmoecon;
 
+import net.minecraft.server.MinecraftServer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -13,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *  Manages per-player balances, persisted to config/mmoecon/balances.dat.
@@ -23,7 +26,10 @@ public class PlayerBalanceManager {
     private static final Path BALANCE_FILE =
             FMLPaths.CONFIGDIR.get().resolve("mmoecon/balances.dat");
 
-    private static final Map<UUID, Float> balances = new HashMap<>();
+    private static final Map<UUID, Float> balances = new ConcurrentHashMap<>();
+
+    private static volatile boolean dirty = false;
+    private static final long FLUSH_INTERVAL_TICKS = 1200L; // ~60s
 
     // Init
     private static void load() {
@@ -54,6 +60,7 @@ public class PlayerBalanceManager {
                     out.writeFloat(entry.getValue());
                 }
             }
+            dirty = false;
         } catch (IOException e) {
             MMOEcon.LOGGER.error("Failed to save balance file to {}: {}", BALANCE_FILE, e.getMessage());
         }
@@ -77,12 +84,22 @@ public class PlayerBalanceManager {
             float startAmount = Config.STARTING_AMOUNT.get().floatValue();
             balances.put(uuid, startAmount);
             MMOEcon.LOGGER.info("New player {}: starting balance ${}", uuid, startAmount);
+            dirty = true;
+        }
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        MinecraftServer server = event.getServer();
+        if (dirty && server.getTickCount() % FLUSH_INTERVAL_TICKS == 0) {
             saveBalances();
         }
     }
 
     @SubscribeEvent
-    public static void onServerStopping(ServerStoppingEvent event) { saveBalances(); }
+    public static void onServerStopping(ServerStoppingEvent event) {
+        if (dirty) saveBalances();
+    }
 
     // Public Balance API
 
@@ -92,7 +109,7 @@ public class PlayerBalanceManager {
 
     public static void setBalance(UUID uuid, float amount) {
         balances.put(uuid, Math.max(0f, amount));
-        saveBalances();
+        dirty = true;
     }
 
     public static void addBalance(UUID uuid, float amount) {
@@ -100,9 +117,8 @@ public class PlayerBalanceManager {
     }
 
     /**
-     * Subtract amount from balance, clamped to zero.
-     * Returns true if the player had sufficient funds, false otherwise.
-     * Does NOT deduct if insufficient — callers should check first with hasFunds.
+     * Subtract amount from balance. Does NOT deduct if the player lacks
+     * sufficient funds — callers should check first with hasFunds.
      */
     public static void subtractBalance(UUID uuid, float amount) {
         if(!hasFunds(uuid, amount)) return;

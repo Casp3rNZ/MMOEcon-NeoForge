@@ -47,9 +47,9 @@ public class SellWand {
             long createdAt
     ) {
         public boolean isExpired() {
-            assert ServerLifecycleHooks.getCurrentServer() != null;
-            long currentTick = ServerLifecycleHooks.getCurrentServer().getTickCount();
-            return currentTick - createdAt > CONFIRM_TIMEOUT_TICKS;
+            var server = ServerLifecycleHooks.getCurrentServer();
+            if (server == null) return true;
+            return server.getTickCount() - createdAt > CONFIRM_TIMEOUT_TICKS;
         }
     }
 

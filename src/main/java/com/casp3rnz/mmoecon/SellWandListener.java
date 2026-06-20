@@ -52,7 +52,6 @@ public class SellWandListener {
         event.setCanceled(true);
 
         BlockPos pos = event.getPos();
-        BlockEntity be = level.getBlockEntity(pos);
 
         // Check if the clicked block is a supported container
         Container container = getContainer(level, pos);
@@ -213,9 +212,10 @@ public class SellWandListener {
                 }
             }
 
-            // If single chest
             return chest;
         }
+
+        if (be instanceof Container container) return container;
         return null;
     }
 

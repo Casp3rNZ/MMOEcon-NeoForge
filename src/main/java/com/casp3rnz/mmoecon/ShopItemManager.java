@@ -124,8 +124,10 @@ public class ShopItemManager {
                 }
         ));
 
+        // Category names support Minecraft &/§ color & format codes, e.g.
+        // "&6&lOres & Materials" renders bold gold. Omit codes for plain white.
         categories.add(buildCategory(
-                "Ores & Materials",
+                "&6Ores & Materials",
                 "minecraft:iron_ore",
                 new String[][]{
                         { "minecraft:coal",         "3.0",  "1.5"  },
@@ -194,7 +196,7 @@ public class ShopItemManager {
         return all;
     }
 
-    /** Returns te ShopItem for the given registry ID, or null is not in the shop. **/
+    /** Returns the ShopItem for the given registry ID, or null is not in the shop. **/
     public static ShopItem findItem(String registryId) {
         for (ShopItem item : getAllItems()) {
             if (item.id.equals(registryId)) return item;

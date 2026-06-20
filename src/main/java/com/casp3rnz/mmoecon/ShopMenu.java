@@ -236,16 +236,15 @@ import java.util.List;
                     player.sendSystemMessage(Component.literal("You can't afford $" + formatMoney(total) + "."));
                     return;
                 }
-                // Check inventory space
-                if (!hasInventorySpace(item, qty)) {
+                boolean special = shopItem.isSpecial();
+                if (special ? freeSlots() < qty : !hasInventorySpace(item, qty)) {
                     player.sendSystemMessage(Component.literal("Not enough inventory space."));
                     return;
                 }
                 PlayerBalanceManager.subtractBalance(player.getUUID(), total);
                 String specialItemName = null;
-                if(shopItem.isSpecial()) {
-                    // give special items
-                    for(int i = 0; i< session.quantity; i++) {
+                if (special) {
+                    for (int i = 0; i < qty; i++) {
                         ItemStack displayStack = createDisplayStack(shopItem);
                         player.getInventory().add(displayStack);
                         specialItemName = displayStack.getItem().getName(displayStack).getString();
@@ -315,6 +314,14 @@ import java.util.List;
             return space >= qty;
         }
 
+        private int freeSlots() {
+            int free = 0;
+            for (ItemStack stack : player.getInventory().items) {
+                if (stack.isEmpty()) free++;
+            }
+            return free;
+        }
+
         private void giveItems(Item item, int qty) {
             int remaining = qty;
             int maxStack = new ItemStack(item).getMaxStackSize();
@@ -381,7 +388,10 @@ import java.util.List;
                 ShopItemManager.ShopCategory cat = cats.get(i);
                 Item repItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(cat.representativeItem()));
                 ItemStack icon = new ItemStack(repItem);
-                icon.set(DataComponents.CUSTOM_NAME, Component.literal(cat.name()));
+                // Parse &/§ color & format codes from the category name. If no style
+                // is supplied this yields plain white, non-italic text — applied via
+                // CUSTOM_NAME so the name isn't rendered in the default italic.
+                icon.set(DataComponents.CUSTOM_NAME, TextStyleParser.parse(cat.name()));
                 shopInventory.setItem(i, icon);
             }
         }
@@ -479,9 +489,14 @@ import java.util.List;
         }
 
         public static String formatMoney(float amount) {
-            if (amount >= 1_000_000) return String.format("%.3fM", amount / 1_000_000);
-            if (amount >= 1_000)     return String.format("%.3fK", amount / 1_000);
-            return String.format("%.2f", amount);
+            if (amount >= 1_000_000) return trim(amount / 1_000_000) + "M";
+            if (amount >= 10_000)    return trim(amount / 1_000) + "K";
+            String formatted = String.format("%,.2f", amount);
+            return formatted.endsWith(".00") ? formatted.substring(0, formatted.length() - 3) : formatted;
+        }
+
+        private static String trim(float value) {
+            return String.format("%.1f", value).replaceAll("\\.0$", "");
         }
 
         private void playClickSound() {

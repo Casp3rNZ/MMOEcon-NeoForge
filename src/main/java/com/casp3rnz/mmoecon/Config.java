@@ -49,7 +49,7 @@ public final class Config {
 
         PLAYTIME_INTERVAL = builder
                 .comment("Ticks between playtime reward payouts.")
-                .defineInRange("playtimeInterval", 36000L, 0L, Long.MAX_VALUE);
+                .defineInRange("playtimeInterval", 36000L, 1L, Long.MAX_VALUE);
 
         STARTING_AMOUNT = builder
                 .comment("Starting balance for new players.")
