@@ -34,6 +34,9 @@ public final class Config {
     // Enable GUI Shop
     public static ModConfigSpec.BooleanValue ENABLE_GUI_SHOP;
 
+    // Hard ceiling on a single shop transaction
+    public static ModConfigSpec.IntValue MAX_TRANSACTION_QUANTITY;
+
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
@@ -62,6 +65,14 @@ public final class Config {
         ENABLE_GUI_SHOP = builder
                 .comment("Enable the chest-based GUI shop (/shop command).")
                 .define("enableGUIShop", true);
+
+        MAX_TRANSACTION_QUANTITY = builder
+                .comment("Upper limit for a single shop transaction.",
+                        "The quantity picker also caps itself at what the player can actually",
+                        "hold (when buying) or already holds (when selling), so this is only",
+                        "a ceiling. Lower it to restrict bulk trading.",
+                        "2304 = a full 36-slot inventory of a 64-stack item.")
+                .defineInRange("maxTransactionQuantity", 2304, 1, Integer.MAX_VALUE);
 
         builder.pop();
 

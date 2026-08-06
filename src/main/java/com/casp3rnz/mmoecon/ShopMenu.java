@@ -186,12 +186,12 @@ import java.util.List;
                     session.navigateTo(ShopViews.ITEM_LIST);
                     populateView();
                 }
-                case QP_INC_1  -> { session.adjustQuantity(+1,  255); populateView(); }
-                case QP_INC_10 -> { session.adjustQuantity(+10, 255); populateView(); }
-                case QP_INC_64 -> { session.adjustQuantity(+64, 255); populateView(); }
-                case QP_DEC_1  -> { session.adjustQuantity(-1,  255); populateView(); }
-                case QP_DEC_10 -> { session.adjustQuantity(-10, 255); populateView(); }
-                case QP_DEC_64 -> { session.adjustQuantity(-64, 255); populateView(); }
+                case QP_INC_1  -> { session.adjustQuantity(+1,  maxQuantity()); populateView(); }
+                case QP_INC_10 -> { session.adjustQuantity(+10, maxQuantity()); populateView(); }
+                case QP_INC_64 -> { session.adjustQuantity(+64, maxQuantity()); populateView(); }
+                case QP_DEC_1  -> { session.adjustQuantity(-1,  maxQuantity()); populateView(); }
+                case QP_DEC_10 -> { session.adjustQuantity(-10, maxQuantity()); populateView(); }
+                case QP_DEC_64 -> { session.adjustQuantity(-64, maxQuantity()); populateView(); }
                 case QP_SELL_ALL -> {
                     if (session.isSelling) {
                         executeSellAll();
@@ -281,6 +281,39 @@ import java.util.List;
 
         // Inventory helpers
 
+        private int maxQuantity() {
+            ShopItemManager.ShopItem shopItem = session.pendingShopItem;
+            int configMax = Config.MAX_TRANSACTION_QUANTITY.get();
+            if (shopItem == null) return configMax;
+
+            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(shopItem.id()));
+
+            int capacity;
+            if (session.isSelling) {
+                capacity = countItemInInventory(item);
+            } else if (shopItem.isSpecial()) {
+                capacity = freeSlots();
+            } else {
+                capacity = availableSpaceFor(item);
+            }
+
+            return Math.clamp(capacity, 1, configMax);
+        }
+
+        /** Total number of `item` the player's inventory could still accept. */
+        private int availableSpaceFor(Item item) {
+            int space = 0;
+            int maxStack = new ItemStack(item).getMaxStackSize();
+            for (ItemStack stack : player.getInventory().items) {
+                if (stack.isEmpty()) {
+                    space += maxStack;
+                } else if (stack.is(item)) {
+                    space += maxStack - stack.getCount();
+                }
+            }
+            return space;
+        }
+
         private int countItemInInventory(Item item) {
             int count = 0;
             for (ItemStack stack : player.getInventory().items) {
@@ -301,17 +334,7 @@ import java.util.List;
         }
 
         private boolean hasInventorySpace(Item item, int qty) {
-            // Simplified check: count available space in existing stacks + empty slots
-            int space = 0;
-            int maxStack = new ItemStack(item).getMaxStackSize();
-            for (ItemStack stack : player.getInventory().items) {
-                if (stack.isEmpty()) {
-                    space += maxStack;
-                } else if (stack.is(item)) {
-                    space += maxStack - stack.getCount();
-                }
-            }
-            return space >= qty;
+            return availableSpaceFor(item) >= qty;
         }
 
         private int freeSlots() {
@@ -447,8 +470,18 @@ import java.util.List;
             shopInventory.setItem(13, displayStack);
             String itemLabel = displayStack.getItem().getName(displayStack).getString();
 
-            // Quantity display
-            shopInventory.setItem(22, namedStack(Items.PAPER, action + " x" + session.quantity));
+            // Quantity display — clamp first so a stale quantity can't survive an
+            // inventory change made while the picker was already open.
+            session.clampQuantity(maxQuantity());
+            ItemStack qtyStack = namedStack(Items.PAPER, action + " x" + session.quantity);
+            float unitPrice = session.isSelling ? shopItem.sellPrice() : shopItem.buyPrice();
+            qtyStack.set(DataComponents.LORE, new ItemLore(List.of(
+                    Component.literal("§7Max: §f" + maxQuantity()
+                                    + (session.isSelling ? " §7(you have)" : " §7(you can hold)"))
+                            .withStyle(s -> s.withItalic(false)),
+                    Component.literal("§7Total: §a$" + formatMoney(unitPrice * session.quantity))
+                            .withStyle(s -> s.withItalic(false)))));
+            shopInventory.setItem(22, qtyStack);
 
             // Increment buttons
             shopInventory.setItem(QP_INC_1,  namedStack(Items.LIME_STAINED_GLASS_PANE,  "§a+1"));

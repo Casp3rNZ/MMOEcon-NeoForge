@@ -22,4 +22,9 @@ public class PlayerShopSession {
         quantity = Math.clamp(quantity + delta, 1, max);
     }
 
+    /** Re-clamps the current quantity, e.g. after the player's capacity changed. */
+    public void clampQuantity(int max) {
+        quantity = Math.clamp(quantity, 1, max);
+    }
+
 }
