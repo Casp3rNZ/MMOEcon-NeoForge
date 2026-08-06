@@ -19,7 +19,10 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.ChestType;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.wrapper.InvWrapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +31,15 @@ import java.util.UUID;
 /**
  * Listens for right-click block events and handles the sell wand flow.
  *
- * Supported containers: anything whose BlockEntity implements Container —
- *  * this covers minecraft:chest, minecraft:barrel, minecraft:trapped_chest,
- *  * minecraft:shulker_box, and most modded chests (Quark, etc.) automatically,
- *  * as long as they implement Container.
+ * Supported containers: the wand reads inventories through NeoForge's
+ * Capabilities.ItemHandler.BLOCK capability, falling back to the vanilla
+ * Container interface for blocks that don't expose it.
+ *  * The capability path covers drawer/storage mods (Functional Drawers,
+ *    Storage Drawers, etc.) and most modern modded storage. It also handles
+ *    slots holding more than one stack, which vanilla Container cannot express.
+ *  * The Container fallback covers minecraft:chest, minecraft:barrel,
+ *    minecraft:trapped_chest, minecraft:shulker_box and older modded chests,
+ *    including double-chest pairing.
  *
  * Flow:
  *   1st right-click: scan container, build preview, store PendingSale
@@ -54,8 +62,8 @@ public class SellWandListener {
         BlockPos pos = event.getPos();
 
         // Check if the clicked block is a supported container
-        Container container = getContainer(level, pos);
-        if (container == null) {
+        IItemHandler handler = getItemHandler(level, pos);
+        if (handler == null) {
             player.sendSystemMessage(Component.literal("§cThis block is not a supported container."));
             SellWand.clearPending(player.getUUID());
             return;
@@ -70,23 +78,23 @@ public class SellWandListener {
             // Must be the same block — clicking a different chest resets
             if (!pending.blockPos().equals(pos)) {
                 SellWand.clearPending(uuid);
-                previewContainer(player, container, pos);
+                previewContainer(player, handler, pos);
                 return;
             }
 
             // Execute the sale
-            executeSale(player, container, pending);
+            executeSale(player, handler, pending);
             SellWand.clearPending(uuid);
             return;
         }
 
         // First click: preview
-        previewContainer(player, container, pos);
+        previewContainer(player, handler, pos);
     }
 
     // Preview
-    private static void previewContainer(ServerPlayer player, Container container, BlockPos pos) {
-        SaleResult preview = calculateSale(container);
+    private static void previewContainer(ServerPlayer player, IItemHandler handler, BlockPos pos) {
+        SaleResult preview = calculateSale(handler);
 
         if (preview.totalItems == 0) {
             player.sendSystemMessage(Component.literal("§cNo sellable items found in this container."));
@@ -110,17 +118,23 @@ public class SellWandListener {
 
     // Execute Sale
 
-    private static void executeSale(ServerPlayer player, Container container, SellWand.PendingSale pending) {
+    private static void executeSale(ServerPlayer player, IItemHandler handler, SellWand.PendingSale pending) {
         // Recalculate at execution time in case contents changed between clicks
-        SaleResult actual = calculateSale(container);
+        SaleResult planned = calculateSale(handler);
 
-        if (actual.totalItems == 0) {
+        if (planned.totalItems == 0) {
             player.sendSystemMessage(Component.literal("§cNo sellable items found — the container may have changed."));
             return;
         }
 
-        // Remove the items and credit the player
-        removeItems(container, actual.slots);
+        // Pay for what actually came out, not what the scan predicted
+        SaleResult actual = removeItems(handler, planned.slots);
+
+        if (actual.totalItems == 0) {
+            player.sendSystemMessage(Component.literal("§cNothing could be removed from this container."));
+            return;
+        }
+
         PlayerBalanceManager.addBalance(player.getUUID(), actual.totalEarned);
 
         player.sendSystemMessage(Component.literal(
@@ -142,31 +156,55 @@ public class SellWandListener {
      * of slot indices that contain sellable items.
      * Does NOT modify the container.
      */
-    private static SaleResult calculateSale(Container container) {
+    private static SaleResult calculateSale(IItemHandler handler) {
         float totalEarned = 0f;
         int totalItems = 0;
         List<SlotSale> slots = new ArrayList<>();
 
-        for (int i = 0; i < container.getContainerSize(); i++) {
-            ItemStack stack = container.getItem(i);
+        for (int i = 0; i < handler.getSlots(); i++) {
+            ItemStack stack = handler.getStackInSlot(i);
             if (stack.isEmpty()) continue;
 
             String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
             ShopItemManager.ShopItem shopItem = ShopItemManager.findItem(itemId);
             if (shopItem == null || !shopItem.canSell()) continue;
 
-            int qty = stack.getCount();
-            float earned = shopItem.sellPrice() * qty;
+            // Only count what the handler will actually hand over. Drawer mods keep
+            // a locked/"protected" stack that can't be extracted, and getStackInSlot
+            // reports the full contents including it — pricing off the raw count
+            // would pay the player for items the sale can't remove.
+            int extractable = handler.extractItem(i, stack.getCount(), true).getCount();
+            if (extractable <= 0) continue;
+
+            float earned = shopItem.sellPrice() * extractable;
             totalEarned += earned;
-            totalItems += qty;
-            slots.add(new SlotSale(i, qty, earned));
+            totalItems += extractable;
+            slots.add(new SlotSale(i, extractable, earned));
         }
 
         return new SaleResult(totalEarned, totalItems, slots);
     }
 
     /**
-     * Returns the container at the given position, automatically combining
+     * Resolves the inventory at the given position as an IItemHandler.
+     * Order matters: the ItemHandler capability is queried first, because mods
+     * that expose both (and drawer mods that expose only the capability) model
+     * their real contents there — a vanilla Container view of a drawer would
+     * under-report a slot holding thousands of items.
+     * Falls back to wrapping the vanilla Container, which keeps double-chest
+     * pairing working. Returns null if the block has no inventory at all.
+     */
+    private static IItemHandler getItemHandler(ServerLevel level, BlockPos pos) {
+        // Null face = the block's general/unsided inventory view.
+        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null);
+        if (handler != null) return handler;
+
+        Container container = getContainer(level, pos);
+        return container == null ? null : new InvWrapper(container);
+    }
+
+    /**
+     * Returns the vanilla container at the given position, automatically combining
      * both halves if the block is a large (double) chest or trapped chest.
      * Falls back to the raw BlockEntity inventory for any other container.
      * Returns null if the block has no inventory.
@@ -174,57 +212,86 @@ public class SellWandListener {
     private static Container getContainer(ServerLevel level, BlockPos pos) {
 
         BlockEntity be = level.getBlockEntity(pos);
-        if(be == null) return null;
-
-        // Handle double chests by checking for a neighbour chest and combining
-        if (be instanceof ChestBlockEntity chest) {
-            BlockState state = level.getBlockState(pos);
-
-            ChestType chestType = state.getValue(ChestBlock.TYPE);
-            if (chestType != ChestType.SINGLE) {
-                Direction facing = state.getValue(ChestBlock.FACING);
-                Direction partnerDir = chestType == ChestType.RIGHT
-                        ? facing.getCounterClockWise()
-                        : facing.getClockWise();
-
-                BlockPos partnerPos = pos.relative(partnerDir);
-                BlockState partnerState = level.getBlockState(partnerPos);
-                BlockEntity partnerBe = level.getBlockEntity(partnerPos);
-
-                // Verify same block type AND opposite chest half — rules out adjacent unrelated chests
-                ChestType partnerType =
-                        partnerState.hasProperty(ChestBlock.TYPE)
-                                ? partnerState.getValue(ChestBlock.TYPE)
-                                : ChestType.SINGLE;
-
-                boolean trulyPaired = partnerBe instanceof ChestBlockEntity
-                        && partnerState.getBlock() == state.getBlock()
-                        && partnerType != chestType  // opposite halves
-                        && partnerType != ChestType.SINGLE;
-
-                if (trulyPaired) {
-                    ChestBlockEntity partnerChest = (ChestBlockEntity) partnerBe;
-                    if (chestType == ChestType.RIGHT) {
-                        return new CompoundContainer(chest, partnerChest);
-                    } else {
-                        return new CompoundContainer(partnerChest, chest);
-                    }
-                }
+        switch (be) {
+            case null -> {
+                return null;
             }
 
-            return chest;
+            // Handle double chests by checking for a neighbour chest and combining
+            case ChestBlockEntity chest -> {
+                BlockState state = level.getBlockState(pos);
+
+                ChestType chestType = state.getValue(ChestBlock.TYPE);
+                if (chestType != ChestType.SINGLE) {
+                    Direction facing = state.getValue(ChestBlock.FACING);
+                    Direction partnerDir = chestType == ChestType.RIGHT
+                            ? facing.getCounterClockWise()
+                            : facing.getClockWise();
+
+                    BlockPos partnerPos = pos.relative(partnerDir);
+                    BlockState partnerState = level.getBlockState(partnerPos);
+                    BlockEntity partnerBe = level.getBlockEntity(partnerPos);
+
+                    // Verify same block type AND opposite chest half — rules out adjacent unrelated chests
+                    ChestType partnerType =
+                            partnerState.hasProperty(ChestBlock.TYPE)
+                                    ? partnerState.getValue(ChestBlock.TYPE)
+                                    : ChestType.SINGLE;
+
+                    boolean trulyPaired = partnerBe instanceof ChestBlockEntity
+                            && partnerState.getBlock() == state.getBlock()
+                            && partnerType != chestType  // opposite halves
+                            && partnerType != ChestType.SINGLE;
+
+                    if (trulyPaired) {
+                        ChestBlockEntity partnerChest = (ChestBlockEntity) partnerBe;
+                        if (chestType == ChestType.RIGHT) {
+                            return new CompoundContainer(chest, partnerChest);
+                        } else {
+                            return new CompoundContainer(partnerChest, chest);
+                        }
+                    }
+                }
+
+                return chest;
+            }
+            case Container container -> {
+                return container;
+            }
+            default -> {
+            }
         }
 
-        if (be instanceof Container container) return container;
         return null;
     }
 
-    /** Removes items from the container at the slots identified by calculateSale. */
-    private static void removeItems(Container container, List<SlotSale> slots) {
+    /**
+     * Extracts the priced items and returns what was actually removed.
+     * Uses extractItem rather than clearing the slot: a drawer slot can hold far
+     * more than the priced amount, so emptying it would destroy items the player
+     * was never paid for. If a handler hands back less than it promised during the
+     * simulation, the shortfall is dropped from the payout instead of trusting the
+     * earlier estimate.
+     */
+    private static SaleResult removeItems(IItemHandler handler, List<SlotSale> slots) {
+        float earned = 0f;
+        int removed = 0;
+        List<SlotSale> actual = new ArrayList<>();
+
         for (SlotSale slot : slots) {
-            container.setItem(slot.slotIndex(), ItemStack.EMPTY);
+            ItemStack taken = handler.extractItem(slot.slotIndex(), slot.quantity(), false);
+            if (taken.isEmpty()) continue;
+
+            int count = taken.getCount();
+            float unitPrice = slot.earned() / slot.quantity();
+            float slotEarned = unitPrice * count;
+
+            earned += slotEarned;
+            removed += count;
+            actual.add(new SlotSale(slot.slotIndex(), count, slotEarned));
         }
-        container.setChanged();
+
+        return new SaleResult(earned, removed, actual);
     }
 
     // Internal records
