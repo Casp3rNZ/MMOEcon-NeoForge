@@ -286,16 +286,20 @@ import java.util.List;
             int configMax = Config.MAX_TRANSACTION_QUANTITY.get();
             if (shopItem == null) return configMax;
 
-            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(shopItem.id()));
-
-            int capacity;
-            if (session.isSelling) {
-                capacity = countItemInInventory(item);
-            } else if (shopItem.isSpecial()) {
-                capacity = freeSlots();
-            } else {
-                capacity = availableSpaceFor(item);
+            // Special items occupy a whole slot each regardless of their backing
+            // item, so they're resolved before any registry lookup.
+            if (!session.isSelling && shopItem.isSpecial()) {
+                return Math.clamp(freeSlots(), 1, configMax);
             }
+
+            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(shopItem.id()));
+            // An id absent from the registry resolves to air, whose 64 max stack
+            // size would advertise capacity for an item that can never fit.
+            if (item == Items.AIR) return 1;
+
+            int capacity = session.isSelling
+                    ? countItemInInventory(item)
+                    : availableSpaceFor(item);
 
             return Math.clamp(capacity, 1, configMax);
         }
@@ -472,15 +476,24 @@ import java.util.List;
 
             // Quantity display — clamp first so a stale quantity can't survive an
             // inventory change made while the picker was already open.
-            session.clampQuantity(maxQuantity());
+            int max = maxQuantity();
+            session.clampQuantity(max);
             ItemStack qtyStack = namedStack(Items.PAPER, action + " x" + session.quantity);
-            float unitPrice = session.isSelling ? shopItem.sellPrice() : shopItem.buyPrice();
-            qtyStack.set(DataComponents.LORE, new ItemLore(List.of(
-                    Component.literal("§7Max: §f" + maxQuantity()
-                                    + (session.isSelling ? " §7(you have)" : " §7(you can hold)"))
-                            .withStyle(s -> s.withItalic(false)),
-                    Component.literal("§7Total: §a$" + formatMoney(unitPrice * session.quantity))
-                            .withStyle(s -> s.withItalic(false)))));
+
+            List<Component> qtyLore = new ArrayList<>();
+            qtyLore.add(Component.literal("§7Max: §f" + max
+                            + (session.isSelling ? " §7(you have)" : " §7(you can hold)"))
+                    .withStyle(s -> s.withItalic(false)));
+
+            // Prices are optional per direction — a buy-only item has no sellPrice
+            // and vice versa, so the total is only shown when one applies.
+            Float unitPrice = session.isSelling ? shopItem.sellPrice() : shopItem.buyPrice();
+            if (unitPrice != null) {
+                qtyLore.add(Component.literal("§7Total: §a$" + formatMoney(unitPrice * session.quantity))
+                        .withStyle(s -> s.withItalic(false)));
+            }
+
+            qtyStack.set(DataComponents.LORE, new ItemLore(qtyLore));
             shopInventory.setItem(22, qtyStack);
 
             // Increment buttons
