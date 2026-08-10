@@ -61,9 +61,9 @@ public class SellWandListener {
         BlockPos pos = event.getPos();
 
         // Check if the clicked block is a supported container
-        IItemHandler handler = getItemHandler(level, pos);
-        if (handler == null) {
-            player.sendSystemMessage(Messages.error("That isn't a container you can sell from."));
+        Container container = getContainer(level, pos);
+        if (container == null) {
+            player.sendSystemMessage(Component.literal("§cThis block is not a supported container."));
             SellWand.clearPending(player.getUUID());
             return;
         }
@@ -121,21 +121,15 @@ public class SellWandListener {
 
     private static void executeSale(ServerPlayer player, IItemHandler handler, SellWand.PendingSale pending) {
         // Recalculate at execution time in case contents changed between clicks
-        SaleResult planned = calculateSale(handler);
-
-        if (planned.totalItems == 0) {
-            player.sendSystemMessage(Messages.error("The container's contents changed, nothing was sold."));
-            return;
-        }
-
-        // Pay for what actually came out, not what the scan predicted
-        SaleResult actual = removeItems(handler, planned.slots);
+        SaleResult actual = calculateSale(container);
 
         if (actual.totalItems == 0) {
-            player.sendSystemMessage(Messages.error("Nothing could be removed from that container."));
+            player.sendSystemMessage(Component.literal("§cNo sellable items found — the container may have changed."));
             return;
         }
 
+        // Remove the items and credit the player
+        removeItems(container, actual.slots);
         PlayerBalanceManager.addBalance(player.getUUID(), actual.totalEarned);
 
         player.sendSystemMessage(Messages.body(
@@ -157,8 +151,8 @@ public class SellWandListener {
      * of slot indices that contain sellable items.
      * Does NOT modify the container.
      */
-    private static SaleResult calculateSale(IItemHandler handler) {
-        long totalEarned = 0L;
+    private static SaleResult calculateSale(Container container) {
+        float totalEarned = 0f;
         int totalItems = 0;
         List<SlotSale> slots = new ArrayList<>();
 
@@ -170,18 +164,11 @@ public class SellWandListener {
             ShopItemManager.ShopItem shopItem = ShopItemManager.findItem(itemId);
             if (shopItem == null || !shopItem.canSell()) continue;
 
-            // Only count what the handler will actually hand over. Drawer mods keep
-            // a locked/"protected" stack that can't be extracted, and getStackInSlot
-            // reports the full contents including it — pricing off the raw count
-            // would pay the player for items the sale can't remove.
-            int extractable = handler.extractItem(i, stack.getCount(), true).getCount();
-            if (extractable <= 0) continue;
-
-            long unitPrice = shopItem.sellPrice();
-            long earned = Money.multiply(unitPrice, extractable);
+            int qty = stack.getCount();
+            float earned = shopItem.sellPrice() * qty;
             totalEarned += earned;
-            totalItems += extractable;
-            slots.add(new SlotSale(i, extractable, unitPrice, earned));
+            totalItems += qty;
+            slots.add(new SlotSale(i, qty, earned));
         }
 
         return new SaleResult(totalEarned, totalItems, slots);
@@ -267,29 +254,10 @@ public class SellWandListener {
         return null;
     }
 
-    /**
-     * Extracts the priced items and returns what was actually removed.
-     * Uses extractItem rather than clearing the slot: a drawer slot can hold far
-     * more than the priced amount, so emptying it would destroy items the player
-     * was never paid for. If a handler hands back less than it promised during the
-     * simulation, the shortfall is dropped from the payout instead of trusting the
-     * earlier estimate.
-     */
-    private static SaleResult removeItems(IItemHandler handler, List<SlotSale> slots) {
-        long earned = 0L;
-        int removed = 0;
-        List<SlotSale> actual = new ArrayList<>();
-
+    /** Removes items from the container at the slots identified by calculateSale. */
+    private static void removeItems(Container container, List<SlotSale> slots) {
         for (SlotSale slot : slots) {
-            ItemStack taken = handler.extractItem(slot.slotIndex(), slot.quantity(), false);
-            if (taken.isEmpty()) continue;
-
-            int count = taken.getCount();
-            long slotEarned = Money.multiply(slot.unitPrice(), count);
-
-            earned += slotEarned;
-            removed += count;
-            actual.add(new SlotSale(slot.slotIndex(), count, slot.unitPrice(), slotEarned));
+            container.setItem(slot.slotIndex(), ItemStack.EMPTY);
         }
 
         return new SaleResult(earned, removed, actual);
