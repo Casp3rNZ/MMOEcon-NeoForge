@@ -225,13 +225,13 @@ import java.util.List;
                     player.sendSystemMessage(Component.literal("You don't have " + qty + "x " + itemName(item) + "."));
                     return;
                 }
-                float total = shopItem.sellPrice() * qty;
+                long total = Money.multiply(shopItem.sellPrice(), qty);
                 removeItemsFromInventory(item, qty);
                 PlayerBalanceManager.addBalance(player.getUUID(), total);
                 player.sendSystemMessage(Component.literal("Sold " + qty + "x " + itemName(item) + " for $" + formatMoney(total)));
                 TransactionLogger.log(player.getName().getString() + " sold " + qty + " " + itemName(item) + " for $" + formatMoney(total));
             } else {
-                float total = shopItem.buyPrice() * qty;
+                long total = Money.multiply(shopItem.buyPrice(), qty);
                 if (!PlayerBalanceManager.hasFunds(player.getUUID(), total)) {
                     player.sendSystemMessage(Component.literal("You can't afford $" + formatMoney(total) + "."));
                     return;
@@ -271,7 +271,7 @@ import java.util.List;
                 return;
             }
 
-            float total = shopItem.sellPrice() * qty;
+            long total = Money.multiply(shopItem.sellPrice(), qty);
             removeItemsFromInventory(item, qty);
             PlayerBalanceManager.addBalance(player.getUUID(), total);
             player.sendSystemMessage(Component.literal("Sold all " + qty + "x " + itemName(item) + " for $" + formatMoney(total)));
@@ -378,7 +378,7 @@ import java.util.List;
         }
 
         private void loadPersistentIcons() {
-            float balance = PlayerBalanceManager.getBalance(player.getUUID());
+            long balance = PlayerBalanceManager.getBalance(player.getUUID());
             String playerName = player.getName().getString();
             ItemStack lantern = new ItemStack(Items.LANTERN);
 
@@ -487,9 +487,9 @@ import java.util.List;
 
             // Prices are optional per direction — a buy-only item has no sellPrice
             // and vice versa, so the total is only shown when one applies.
-            Float unitPrice = session.isSelling ? shopItem.sellPrice() : shopItem.buyPrice();
+            Long unitPrice = session.isSelling ? shopItem.sellPrice() : shopItem.buyPrice();
             if (unitPrice != null) {
-                qtyLore.add(Component.literal("§7Total: §a$" + formatMoney(unitPrice * session.quantity))
+                qtyLore.add(Component.literal("§7Total: §a$" + formatMoney(Money.multiply(unitPrice, session.quantity)))
                         .withStyle(s -> s.withItalic(false)));
             }
 
@@ -534,15 +534,8 @@ import java.util.List;
             return Math.max(0, (itemCount - 1) / pageSize);
         }
 
-        public static String formatMoney(float amount) {
-            if (amount >= 1_000_000) return trim(amount / 1_000_000) + "M";
-            if (amount >= 10_000)    return trim(amount / 1_000) + "K";
-            String formatted = String.format("%,.2f", amount);
-            return formatted.endsWith(".00") ? formatted.substring(0, formatted.length() - 3) : formatted;
-        }
-
-        private static String trim(float value) {
-            return String.format("%.1f", value).replaceAll("\\.0$", "");
+        public static String formatMoney(long cents) {
+            return Money.format(cents);
         }
 
         private void playClickSound() {

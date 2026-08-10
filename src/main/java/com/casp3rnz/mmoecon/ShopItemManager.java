@@ -74,8 +74,10 @@ public class ShopItemManager {
                     try {
                         JsonObject itemJson = itemsJson.get(j).getAsJsonObject();
                         String id = itemJson.get("id").getAsString();
-                        Float buyPrice  = itemJson.has("buyPrice")  ? itemJson.get("buyPrice").getAsFloat()  : null;
-                        Float sellPrice = itemJson.has("sellPrice") ? itemJson.get("sellPrice").getAsFloat() : null;
+                        Long buyPrice  = itemJson.has("buyPrice")
+                                ? Money.fromDouble(itemJson.get("buyPrice").getAsDouble())  : null;
+                        Long sellPrice = itemJson.has("sellPrice")
+                                ? Money.fromDouble(itemJson.get("sellPrice").getAsDouble()) : null;
                         String specialItem = itemJson.has("special") ? itemJson.get("special").getAsString() : null;
                         items.add(new ShopItem(id, buyPrice, sellPrice, specialItem));
                     } catch (Exception e) {
@@ -176,8 +178,8 @@ public class ShopItemManager {
         for (String[] entry : items) {
             JsonObject item = new JsonObject();
             item.addProperty("id", entry[0]);
-            if (entry[1] != null) item.addProperty("buyPrice",  Float.parseFloat(entry[1]));
-            if (entry[2] != null) item.addProperty("sellPrice", Float.parseFloat(entry[2]));
+            if (entry[1] != null) item.addProperty("buyPrice",  new java.math.BigDecimal(entry[1]));
+            if (entry[2] != null) item.addProperty("sellPrice", new java.math.BigDecimal(entry[2]));
             itemsArray.add(item);
         }
         cat.add("items", itemsArray);
@@ -206,7 +208,8 @@ public class ShopItemManager {
 
 
     // Data Classes
-    public record ShopItem(String id, Float buyPrice, Float sellPrice, String special) {
+    /** Prices are in cents (see Money); null means the item can't be traded that way. */
+    public record ShopItem(String id, Long buyPrice, Long sellPrice, String special) {
         public boolean canBuy() { return buyPrice != null; }
         public boolean canSell() { return sellPrice != null; }
         public boolean isSpecial() { return special != null; }

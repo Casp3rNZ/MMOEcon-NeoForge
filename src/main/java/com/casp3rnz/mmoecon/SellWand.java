@@ -36,13 +36,13 @@ public class SellWand {
      * expired on second click. Stored as server tick time so we can time out.
      * @param blockPos   The exact block position clicked on the first click.
      *                   Second click must be the same block to confirm.
-     * @param totalValue The calculated sell value of the container contents.
+     * @param totalValue The calculated sell value of the container contents, in cents.
      * @param totalItems Number of individual items that will be sold.
      * @param createdAt  Server tick time when this pending sale was created.
      */
     public record PendingSale(
             BlockPos blockPos,
-            float totalValue,
+            long totalValue,
             int totalItems,
             long createdAt
     ) {

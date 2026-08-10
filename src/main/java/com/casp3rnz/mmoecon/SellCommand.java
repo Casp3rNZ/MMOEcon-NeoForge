@@ -30,7 +30,7 @@ public final class SellCommand {
         }
 
         int qty   = held.getCount();
-        float total = shopItem.sellPrice() * qty;
+        long total = Money.multiply(shopItem.sellPrice(), qty);
 
         player.getInventory().removeItem(player.getInventory().selected, qty);
         PlayerBalanceManager.addBalance(player.getUUID(), total);
@@ -46,8 +46,8 @@ public final class SellCommand {
     }
 
     static int sellInventory(ServerPlayer player) {
-        float totalEarned = 0f;
-        int   totalSold   = 0;
+        long totalEarned = 0L;
+        int  totalSold   = 0;
 
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
@@ -60,10 +60,10 @@ public final class SellCommand {
             ShopItemManager.ShopItem shopItem = ShopItemManager.findItem(itemId);
             if (shopItem == null || !shopItem.canSell()) continue;
 
-            int qty       = stack.getCount();
-            float earned  = shopItem.sellPrice() * qty;
-            totalEarned  += earned;
-            totalSold    += qty;
+            int qty      = stack.getCount();
+            long earned  = Money.multiply(shopItem.sellPrice(), qty);
+            totalEarned += earned;
+            totalSold   += qty;
 
             String itemName = stack.getHoverName().getString();
             player.getInventory().setItem(i, ItemStack.EMPTY);
@@ -72,7 +72,6 @@ public final class SellCommand {
         }
 
         if (totalSold > 0) {
-            final float earned = totalEarned;
             PlayerBalanceManager.addBalance(player.getUUID(), totalEarned);
             player.sendSystemMessage(Component.literal(
                     "Sold " + totalSold + " items for $" + ShopMenu.formatMoney(totalEarned) + " total."));

@@ -23,7 +23,7 @@ public final class PlaytimeRewardListener {
         // Skip the very first tick (tickCount == 0 at world load would fire immediately)
         if (server.getTickCount() == 0) return;
 
-        float reward = Config.PLAYTIME_REWARD.get().floatValue();
+        long reward = Money.fromDouble(Config.PLAYTIME_REWARD.get());
 
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             PlayerBalanceManager.addBalance(player.getUUID(), reward);

@@ -2,7 +2,7 @@ package com.casp3rnz.mmoecon;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.FloatArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -32,6 +32,7 @@ import java.util.*;
  *   /shop reload    — reload shop JSON config
  *   /sell hand      — sell held item
  *   /sell inv       — sell all sellable items in inventory
+ *   /sellwand give - (admin only) gives user a sell wand
  */
 public final class EconomyCommands {
 
@@ -55,10 +56,10 @@ public final class EconomyCommands {
         dispatcher.register(Commands.literal("pay")
                 .then(Commands.argument("target", StringArgumentType.string())
                         .suggests(ONLINE_PLAYERS)
-                        .then(Commands.argument("amount", FloatArgumentType.floatArg(0.01f))
+                        .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.01d))
                                 .executes(ctx -> {
                                     String targetName = StringArgumentType.getString(ctx, "target");
-                                    float amount = FloatArgumentType.getFloat(ctx, "amount");
+                                    long amount = Money.fromDouble(DoubleArgumentType.getDouble(ctx, "amount"));
                                     return executePay(ctx.getSource(), targetName, amount);
                                 }))));
 
@@ -104,20 +105,20 @@ public final class EconomyCommands {
 
     private static int showBalance(CommandSourceStack src) throws CommandSyntaxException {
         ServerPlayer player = src.getPlayerOrException();
-        float balance = PlayerBalanceManager.getBalance(player.getUUID());
+        long balance = PlayerBalanceManager.getBalance(player.getUUID());
         src.sendSuccess(() -> Component.literal("Your balance: $" + ShopMenu.formatMoney(balance)), false);
         return Command.SINGLE_SUCCESS;
     }
 
     private static int showBalTop(CommandSourceStack src) {
-        List<Map.Entry<UUID, Float>> sorted = new ArrayList<>(PlayerBalanceManager.getBalances().entrySet());
-        sorted.sort(Map.Entry.<UUID, Float>comparingByValue().reversed());
+        List<Map.Entry<UUID, Long>> sorted = new ArrayList<>(PlayerBalanceManager.getBalances().entrySet());
+        sorted.sort(Map.Entry.<UUID, Long>comparingByValue().reversed());
 
         src.sendSuccess(() -> Component.literal("§6§lWealthiest players:"), false);
         MinecraftServer server = src.getServer();
 
         for (int i = 0; i < Math.min(10, sorted.size()); i++) {
-            Map.Entry<UUID, Float> entry = sorted.get(i);
+            Map.Entry<UUID, Long> entry = sorted.get(i);
             Optional<GameProfile> profile = Objects.requireNonNull(server.getProfileCache()).get(entry.getKey());
             String name = profile.map(GameProfile::getName).orElse("unknown");
             final int rank = i + 1;
@@ -127,7 +128,7 @@ public final class EconomyCommands {
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int executePay(CommandSourceStack src, String targetName, float amount)
+    private static int executePay(CommandSourceStack src, String targetName, long amount)
             throws CommandSyntaxException {
 
         ServerPlayer sender = src.getPlayerOrException();
@@ -141,13 +142,17 @@ public final class EconomyCommands {
             src.sendFailure(Component.literal("You can't pay yourself."));
             return 0;
         }
-        if (!PlayerBalanceManager.hasFunds(sender.getUUID(), amount)) {
+        // Checked before the transfer so a missing account isn't reported as
+        // "not enough money". Both sides are online here, so both should already
+        // have accounts — this only trips if one somehow wasn't created on join.
+        if (!PlayerBalanceManager.hasAccount(target.getUUID())) {
+            src.sendFailure(Component.literal("'" + targetName + "' does not have an account yet."));
+            return 0;
+        }
+        if (!PlayerBalanceManager.transfer(sender.getUUID(), target.getUUID(), amount)) {
             src.sendFailure(Component.literal("You don't have enough money."));
             return 0;
         }
-
-        PlayerBalanceManager.subtractBalance(sender.getUUID(), amount);
-        PlayerBalanceManager.addBalance(target.getUUID(), amount);
 
         src.sendSuccess(() -> Component.literal("Paid $" + ShopMenu.formatMoney(amount) + " to " + targetName + "."), false);
         target.sendSystemMessage(Component.literal(sender.getName().getString() + " paid you $" + ShopMenu.formatMoney(amount) + "."));

@@ -157,7 +157,7 @@ public class SellWandListener {
      * Does NOT modify the container.
      */
     private static SaleResult calculateSale(IItemHandler handler) {
-        float totalEarned = 0f;
+        long totalEarned = 0L;
         int totalItems = 0;
         List<SlotSale> slots = new ArrayList<>();
 
@@ -176,8 +176,8 @@ public class SellWandListener {
             int extractable = handler.extractItem(i, stack.getCount(), true).getCount();
             if (extractable <= 0) continue;
 
-            float unitPrice = shopItem.sellPrice();
-            float earned = unitPrice * extractable;
+            long unitPrice = shopItem.sellPrice();
+            long earned = Money.multiply(unitPrice, extractable);
             totalEarned += earned;
             totalItems += extractable;
             slots.add(new SlotSale(i, extractable, unitPrice, earned));
@@ -275,7 +275,7 @@ public class SellWandListener {
      * earlier estimate.
      */
     private static SaleResult removeItems(IItemHandler handler, List<SlotSale> slots) {
-        float earned = 0f;
+        long earned = 0L;
         int removed = 0;
         List<SlotSale> actual = new ArrayList<>();
 
@@ -284,11 +284,7 @@ public class SellWandListener {
             if (taken.isEmpty()) continue;
 
             int count = taken.getCount();
-            // Exact when the full amount came out; otherwise priced off the same
-            // unit price the preview used, never a divided-out average.
-            float slotEarned = count == slot.quantity()
-                    ? slot.earned()
-                    : slot.unitPrice() * count;
+            long slotEarned = Money.multiply(slot.unitPrice(), count);
 
             earned += slotEarned;
             removed += count;
@@ -300,15 +296,9 @@ public class SellWandListener {
 
     // Internal records
 
-    /**
-     * A single slot's contribution to a sale. Carries the unit price rather than
-     * only the total so the payout can be recomputed exactly when the extracted
-     * amount differs — dividing `earned` back out would add a rounding step, which
-     * float precision makes visible on drawer-sized stacks.
-     */
-    private record SlotSale(int slotIndex, int quantity, float unitPrice, float earned) {}
+    private record SlotSale(int slotIndex, int quantity, long unitPrice, long earned) {}
 
-    private record SaleResult(float totalEarned, int totalItems, List<SlotSale> slots) {}
+    private record SaleResult(long totalEarned, int totalItems, List<SlotSale> slots) {}
 
     private SellWandListener() {}
 
