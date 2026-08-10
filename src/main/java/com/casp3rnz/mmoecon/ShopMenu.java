@@ -222,23 +222,28 @@ import java.util.List;
                 // Verify the player has enough of the item
                 int held = countItemInInventory(item);
                 if (held < qty) {
-                    player.sendSystemMessage(Component.literal("You don't have " + qty + "x " + itemName(item) + "."));
+                    player.sendSystemMessage(Messages.error(
+                            "You only have " + held + "x " + itemName(item) + "."));
                     return;
                 }
                 long total = Money.multiply(shopItem.sellPrice(), qty);
                 removeItemsFromInventory(item, qty);
                 PlayerBalanceManager.addBalance(player.getUUID(), total);
-                player.sendSystemMessage(Component.literal("Sold " + qty + "x " + itemName(item) + " for $" + formatMoney(total)));
+                player.sendSystemMessage(Messages.body(
+                        "Sold " + Messages.item(qty + "x " + itemName(item))
+                                + " for " + Messages.money(total) + "."));
                 TransactionLogger.log(player.getName().getString() + " sold " + qty + " " + itemName(item) + " for $" + formatMoney(total));
             } else {
                 long total = Money.multiply(shopItem.buyPrice(), qty);
                 if (!PlayerBalanceManager.hasFunds(player.getUUID(), total)) {
-                    player.sendSystemMessage(Component.literal("You can't afford $" + formatMoney(total) + "."));
+                    long shortfall = total - PlayerBalanceManager.getBalance(player.getUUID());
+                    player.sendSystemMessage(Messages.error(
+                            "You need $" + Money.format(shortfall) + " more for that."));
                     return;
                 }
                 boolean special = shopItem.isSpecial();
                 if (special ? freeSlots() < qty : !hasInventorySpace(item, qty)) {
-                    player.sendSystemMessage(Component.literal("Not enough inventory space."));
+                    player.sendSystemMessage(Messages.error("You don't have room for that."));
                     return;
                 }
                 PlayerBalanceManager.subtractBalance(player.getUUID(), total);
@@ -252,7 +257,10 @@ import java.util.List;
                 } else {
                     giveItems(item, qty);
                 }
-                player.sendSystemMessage(Component.literal("Bought " + qty + "x " + (specialItemName != null ? specialItemName : itemName(item)) + " for $" + formatMoney(total)));
+                player.sendSystemMessage(Messages.body(
+                        "Bought " + Messages.item(qty + "x "
+                                + (specialItemName != null ? specialItemName : itemName(item)))
+                                + " for " + Messages.money(total) + "."));
                 TransactionLogger.log(player.getName().getString() + " bought " + qty + " " + (specialItemName != null ? specialItemName : itemName(item)) + " for $" + formatMoney(total));
             }
 
@@ -267,14 +275,16 @@ import java.util.List;
 
             int qty = countItemInInventory(item);
             if (qty == 0) {
-                player.sendSystemMessage(Component.literal("You have no " + itemName(item) + " to sell."));
+                player.sendSystemMessage(Messages.error("You have no " + itemName(item) + " to sell."));
                 return;
             }
 
             long total = Money.multiply(shopItem.sellPrice(), qty);
             removeItemsFromInventory(item, qty);
             PlayerBalanceManager.addBalance(player.getUUID(), total);
-            player.sendSystemMessage(Component.literal("Sold all " + qty + "x " + itemName(item) + " for $" + formatMoney(total)));
+            player.sendSystemMessage(Messages.body(
+                    "Sold all " + Messages.item(qty + "x " + itemName(item))
+                            + " for " + Messages.money(total) + "."));
             TransactionLogger.log(player.getName().getString() + " sold all " + qty + " " + itemName(item) + " for $" + formatMoney(total));
             playTransactionSound();
         }
@@ -526,8 +536,13 @@ import java.util.List;
             return stack;
         }
 
+        /**
+         * The item's proper display name, translated and mod-aware — deriving it
+         * from the registry path instead would render "create:cogwheel" as
+         * "cogwheel" and miss any custom or localised name.
+         */
         private static String itemName(Item item) {
-            return BuiltInRegistries.ITEM.getKey(item).getPath().replace('_', ' ');
+            return new ItemStack(item).getHoverName().getString();
         }
 
         private static int maxPage(int itemCount, int pageSize) {

@@ -12,6 +12,8 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
@@ -74,7 +76,7 @@ public final class EconomyCommands {
                         .requires(src -> src.hasPermission(2)) // op-only
                         .executes(ctx -> {
                             ShopItemManager.reload();
-                            ctx.getSource().sendSuccess(() -> Component.literal("§aShop config reloaded."), true);
+                            ctx.getSource().sendSuccess(() -> Messages.success("Shop config reloaded."), true);
                             return Command.SINGLE_SUCCESS;
                         })));
 
@@ -96,7 +98,7 @@ public final class EconomyCommands {
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             player.getInventory().add(SellWand.create());
-                            ctx.getSource().sendSuccess(() -> Component.literal("§aGiven a Sell Wand."), false);
+                            ctx.getSource().sendSuccess(() -> Messages.success("Given a Sell Wand."), false);
                             return Command.SINGLE_SUCCESS;
                         })));
     }
@@ -106,7 +108,7 @@ public final class EconomyCommands {
     private static int showBalance(CommandSourceStack src) throws CommandSyntaxException {
         ServerPlayer player = src.getPlayerOrException();
         long balance = PlayerBalanceManager.getBalance(player.getUUID());
-        src.sendSuccess(() -> Component.literal("Your balance: $" + ShopMenu.formatMoney(balance)), false);
+        src.sendSuccess(() -> Messages.body("Balance: " + Messages.money(balance)), false);
         return Command.SINGLE_SUCCESS;
     }
 
@@ -114,7 +116,12 @@ public final class EconomyCommands {
         List<Map.Entry<UUID, Long>> sorted = new ArrayList<>(PlayerBalanceManager.getBalances().entrySet());
         sorted.sort(Map.Entry.<UUID, Long>comparingByValue().reversed());
 
-        src.sendSuccess(() -> Component.literal("§6§lWealthiest players:"), false);
+        if (sorted.isEmpty()) {
+            src.sendSuccess(() -> Messages.info("No balances recorded yet."), false);
+            return Command.SINGLE_SUCCESS;
+        }
+
+        src.sendSuccess(() -> Component.literal("§8§m                    §r §6§lTop Balances §8§m                    "), false);
         MinecraftServer server = src.getServer();
 
         for (int i = 0; i < Math.min(10, sorted.size()); i++) {
@@ -122,7 +129,18 @@ public final class EconomyCommands {
             Optional<GameProfile> profile = Objects.requireNonNull(server.getProfileCache()).get(entry.getKey());
             String name = profile.map(GameProfile::getName).orElse("unknown");
             final int rank = i + 1;
-            final String display = rank + ". " + name + ": $" + ShopMenu.formatMoney(entry.getValue());
+
+            // Gold/silver/bronze for the podium, muted grey for the rest, so the
+            // top of the list reads at a glance.
+            String rankColour = switch (rank) {
+                case 1 -> "§6";
+                case 2 -> "§f";
+                case 3 -> "§c";
+                default -> "§8";
+            };
+
+            final String display = " " + rankColour + rank + "." + " §7" + name
+                    + " §8- " + "§a$" + Money.format(entry.getValue());
             src.sendSuccess(() -> Component.literal(display), false);
         }
         return Command.SINGLE_SUCCESS;
@@ -135,27 +153,34 @@ public final class EconomyCommands {
         ServerPlayer target = src.getServer().getPlayerList().getPlayerByName(targetName);
 
         if (target == null) {
-            src.sendFailure(Component.literal("Player '" + targetName + "' is not online."));
+            src.sendFailure(Messages.error(targetName + " is not online."));
             return 0;
         }
         if (target.equals(sender)) {
-            src.sendFailure(Component.literal("You can't pay yourself."));
+            src.sendFailure(Messages.error("You can't pay yourself."));
             return 0;
         }
         // Checked before the transfer so a missing account isn't reported as
         // "not enough money". Both sides are online here, so both should already
         // have accounts — this only trips if one somehow wasn't created on join.
         if (!PlayerBalanceManager.hasAccount(target.getUUID())) {
-            src.sendFailure(Component.literal("'" + targetName + "' does not have an account yet."));
+            src.sendFailure(Messages.error(targetName + " doesn't have an account yet."));
             return 0;
         }
         if (!PlayerBalanceManager.transfer(sender.getUUID(), target.getUUID(), amount)) {
-            src.sendFailure(Component.literal("You don't have enough money."));
+            long shortfall = amount - PlayerBalanceManager.getBalance(sender.getUUID());
+            src.sendFailure(Messages.error(
+                    "You need $" + Money.format(shortfall) + " more to pay that."));
             return 0;
         }
 
-        src.sendSuccess(() -> Component.literal("Paid $" + ShopMenu.formatMoney(amount) + " to " + targetName + "."), false);
-        target.sendSystemMessage(Component.literal(sender.getName().getString() + " paid you $" + ShopMenu.formatMoney(amount) + "."));
+        src.sendSuccess(() -> Messages.body(
+                "Paid " + Messages.money(amount) + " to " + Messages.item(targetName) + "."), false);
+        target.sendSystemMessage(Messages.body(
+                Messages.item(sender.getName().getString())
+                        + " paid you " + Messages.money(amount) + "."));
+        // Receiving money should feel like the other transactions in the mod.
+        target.playNotifySound(SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.7f, 1.0f);
 
         return Command.SINGLE_SUCCESS;
     }

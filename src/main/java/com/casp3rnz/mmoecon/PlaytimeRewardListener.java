@@ -1,6 +1,5 @@
 package com.casp3rnz.mmoecon;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -27,9 +26,8 @@ public final class PlaytimeRewardListener {
 
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             PlayerBalanceManager.addBalance(player.getUUID(), reward);
-            player.sendSystemMessage(Component.literal(
-                    "§a+$" + ShopMenu.formatMoney(reward)
-                            + " §7playtime reward!"));
+            player.sendSystemMessage(Messages.body(
+                    "You earned " + Messages.money(reward) + " for playing."));
         }
     }
 

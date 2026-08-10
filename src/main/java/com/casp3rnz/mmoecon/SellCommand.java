@@ -2,7 +2,6 @@ package com.casp3rnz.mmoecon;
 
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -17,7 +16,7 @@ public final class SellCommand {
     static int sellHand(ServerPlayer player) {
         ItemStack held = player.getMainHandItem();
         if (held.isEmpty()) {
-            player.sendSystemMessage(Component.literal("You are not holding any item."));
+            player.sendSystemMessage(Messages.error("You are not holding anything."));
             return 0;
         }
 
@@ -25,7 +24,8 @@ public final class SellCommand {
         ShopItemManager.ShopItem shopItem = ShopItemManager.findItem(itemId);
 
         if (shopItem == null || !shopItem.canSell()) {
-            player.sendSystemMessage(Component.literal("This item cannot be sold."));
+            player.sendSystemMessage(Messages.error(
+                    held.getHoverName().getString() + " can't be sold here."));
             return 0;
         }
 
@@ -36,8 +36,9 @@ public final class SellCommand {
         PlayerBalanceManager.addBalance(player.getUUID(), total);
 
         String itemName = held.getHoverName().getString();
-        player.sendSystemMessage(Component.literal(
-                "Sold " + qty + "x " + itemName + " for $" + ShopMenu.formatMoney(total)));
+        player.sendSystemMessage(Messages.body(
+                "Sold " + Messages.item(qty + "x " + itemName)
+                        + " for " + Messages.money(total) + "."));
         TransactionLogger.log(player.getName().getString() + " sold " + qty + " " + itemName
                 + " for $" + ShopMenu.formatMoney(total));
 
@@ -73,11 +74,12 @@ public final class SellCommand {
 
         if (totalSold > 0) {
             PlayerBalanceManager.addBalance(player.getUUID(), totalEarned);
-            player.sendSystemMessage(Component.literal(
-                    "Sold " + totalSold + " items for $" + ShopMenu.formatMoney(totalEarned) + " total."));
+            player.sendSystemMessage(Messages.body(
+                    "Sold " + Messages.item(totalSold + " items")
+                            + " for " + Messages.money(totalEarned) + "."));
             player.playNotifySound(SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.7f, 1.0f);
         } else {
-            player.sendSystemMessage(Component.literal("No sellable items found in your inventory."));
+            player.sendSystemMessage(Messages.error("Nothing in your inventory can be sold here."));
         }
 
         return 1;

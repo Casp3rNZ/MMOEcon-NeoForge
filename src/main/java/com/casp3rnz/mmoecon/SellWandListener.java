@@ -3,7 +3,6 @@ package com.casp3rnz.mmoecon;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -64,7 +63,7 @@ public class SellWandListener {
         // Check if the clicked block is a supported container
         IItemHandler handler = getItemHandler(level, pos);
         if (handler == null) {
-            player.sendSystemMessage(Component.literal("§cThis block is not a supported container."));
+            player.sendSystemMessage(Messages.error("That isn't a container you can sell from."));
             SellWand.clearPending(player.getUUID());
             return;
         }
@@ -97,7 +96,7 @@ public class SellWandListener {
         SaleResult preview = calculateSale(handler);
 
         if (preview.totalItems == 0) {
-            player.sendSystemMessage(Component.literal("§cNo sellable items found in this container."));
+            player.sendSystemMessage(Messages.error("Nothing in there can be sold."));
             return;
         }
 
@@ -106,12 +105,14 @@ public class SellWandListener {
         SellWand.setPending(player.getUUID(), new SellWand.PendingSale(
                 pos, preview.totalEarned, preview.totalItems, now));
 
-        // Send preview message
-        player.sendSystemMessage(Component.literal(
-                "§eFound §f" + preview.totalItems + " §esellable items worth §a$"
-                        + ShopMenu.formatMoney(preview.totalEarned) + "§e."));
-        player.sendSystemMessage(Component.literal(
-                "§eRight-click the same chest again within §f15 seconds §eto confirm."));
+        // Send preview message. The window is derived from the timeout constant so
+        // the two can't drift apart if it's ever retuned.
+        long seconds = SellWand.CONFIRM_TIMEOUT_TICKS / 20L;
+        player.sendSystemMessage(Messages.body(
+                "Found " + Messages.item(preview.totalItems + " sellable items")
+                        + " worth " + Messages.money(preview.totalEarned) + "."));
+        player.sendSystemMessage(Messages.body(
+                "Right-click again within " + Messages.item(seconds + "s") + " to confirm."));
 
         player.playNotifySound(SoundEvents.NOTE_BLOCK_CHIME.value(), SoundSource.PLAYERS, 0.5f, 1.2f);
     }
@@ -123,7 +124,7 @@ public class SellWandListener {
         SaleResult planned = calculateSale(handler);
 
         if (planned.totalItems == 0) {
-            player.sendSystemMessage(Component.literal("§cNo sellable items found — the container may have changed."));
+            player.sendSystemMessage(Messages.error("The container's contents changed, nothing was sold."));
             return;
         }
 
@@ -131,15 +132,15 @@ public class SellWandListener {
         SaleResult actual = removeItems(handler, planned.slots);
 
         if (actual.totalItems == 0) {
-            player.sendSystemMessage(Component.literal("§cNothing could be removed from this container."));
+            player.sendSystemMessage(Messages.error("Nothing could be removed from that container."));
             return;
         }
 
         PlayerBalanceManager.addBalance(player.getUUID(), actual.totalEarned);
 
-        player.sendSystemMessage(Component.literal(
-                "§aSold §f" + actual.totalItems + " §aitems for §a$"
-                        + ShopMenu.formatMoney(actual.totalEarned) + "§a!"));
+        player.sendSystemMessage(Messages.body(
+                "Sold " + Messages.item(actual.totalItems + " items")
+                        + " for " + Messages.money(actual.totalEarned) + "."));
 
         TransactionLogger.log(player.getName().getString()
                 + " used sell wand at " + pending.blockPos()
