@@ -23,11 +23,6 @@ It is completely server-side and does NOT need to be installed on any clients in
 - [x] Sell wands.
 - [x] Playtime balance rewards.
 
-### Planned Features
-- [ ] Player / Mob kill rewards.
-- [ ] Player to Player trading / Auction house.
-- [ ] Player run Chestshops.
-
 ### Commands
 - /bal, /money - Displays the player's balance.
 - /pay <playername> <amount> - Pays money to player from your balance.
