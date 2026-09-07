@@ -21,21 +21,18 @@ public final class Config {
     public static final ModConfigSpec.DoubleValue PLAYTIME_REWARD;
     // Interval in ticks (36000 = 30 min)
     public static final ModConfigSpec.LongValue PLAYTIME_INTERVAL;
-
-    // Kill Rewards (todo in later update)
-    //public static final ModConfigSpec.BooleanValue ENABLE_KILL_REWARDS_PVE;
-    //public static final ModConfigSpec.DoubleValue KILL_REWARD_PVE;
-    //public static final ModConfigSpec.BooleanValue ENABLE_KILL_REWARDS_PVP;
-    //public static final ModConfigSpec.DoubleValue KILL_REWARD_PVP;
-
     // New player starting balance
     public static final ModConfigSpec.DoubleValue STARTING_AMOUNT;
-
     // Enable GUI Shop
     public static ModConfigSpec.BooleanValue ENABLE_GUI_SHOP;
-
     // Hard ceiling on a single shop transaction
     public static ModConfigSpec.IntValue MAX_TRANSACTION_QUANTITY;
+    // Enable Auction House
+    public static ModConfigSpec.BooleanValue ENABLE_AUCTION_HOUSE;
+    // Max number of active listings one player may hold at once
+    public static ModConfigSpec.IntValue MAX_AUCTION_QUANTITY;
+    // Hard ceiling on the item count of a single listing
+    public static ModConfigSpec.IntValue MAX_AUCTION_LISTING_SIZE;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -69,10 +66,28 @@ public final class Config {
         MAX_TRANSACTION_QUANTITY = builder
                 .comment("Upper limit for a single shop transaction.",
                         "The quantity picker also caps itself at what the player can actually",
-                        "hold (when buying) or already holds (when selling), so this is only",
-                        "a ceiling. Lower it to restrict bulk trading.",
+                        "hold (when buying) or already holds (when selling)",
+                        "Lower it to restrict bulk trading.",
                         "2304 = a full 36-slot inventory of a 64-stack item.")
                 .defineInRange("maxTransactionQuantity", 2304, 1, Integer.MAX_VALUE);
+
+        builder.pop();
+
+        builder.push("auction house");
+
+        ENABLE_AUCTION_HOUSE = builder
+                .comment("Enable the player Auction House (/ah command)")
+                .define("enableAuctionHouse", true);
+
+        MAX_AUCTION_QUANTITY = builder
+                .comment("Maximum number of active listings a single player may have at once.",
+                        "A player at this cap must let a listing sell or delist one before posting another.")
+                .defineInRange("maxAuctionQuantity", 10, 1, Integer.MAX_VALUE);
+
+        MAX_AUCTION_LISTING_SIZE = builder
+                .comment("Upper limit on the item count of a single listing.",
+                        "/ah sell gathers up to this many of the held item from the player's inventory.")
+                .defineInRange("maxAuctionListingSize", 2304, 1, Integer.MAX_VALUE);
 
         builder.pop();
 

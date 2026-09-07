@@ -8,22 +8,6 @@ import net.minecraft.network.chat.Style;
 /**
  * Parses Minecraft's standard legacy formatting codes (the {@code &} / {@code §}
  * system) into a {@link Component} suitable for use as an item name or lore line.
- *
- * Server owners write codes with the ampersand form, e.g. {@code &6&lOres},
- * which is the convention used by most server plugins/configs. Both {@code &}
- * and the section sign {@code §} are accepted.
- *
- * Two important behaviours for shop display:
- *   - If no style is supplied, the text is rendered as normal white,
- *     not the provider's default.
- *   - The base style always sets italic = false, so names/lore applied to an
- *     ItemStack via CUSTOM_NAME / LORE do not render in the default italic that
- *     Minecraft uses for custom-named items.
- *
- * Supported codes (case-insensitive):
- *   Colors:  0-9, a-f
- *   Formats: k (obfuscated), l (bold), m (strikethrough), n (underline),
- *            o (italic), r (reset)
  */
 public final class TextStyleParser {
 
@@ -31,7 +15,7 @@ public final class TextStyleParser {
 
     /**
      * Parse a legacy-coded string into a Component with italic disabled by
-     * default. Unstyled text becomes plain white, non-italic.
+     * default.
      *
      * @param text the raw string, possibly containing {@code &} / {@code §} codes
      * @return a Component ready to apply to an ItemStack

@@ -21,8 +21,10 @@ public class MMOEcon {
         modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
 
         // Register NeoForge game event listeners
+        NeoForge.EVENT_BUS.register(Permissions.class);
         NeoForge.EVENT_BUS.register(EconomyCommands.class);
         NeoForge.EVENT_BUS.register(PlayerBalanceManager.class);
+        NeoForge.EVENT_BUS.register(AuctionHouseManager.class);
         NeoForge.EVENT_BUS.register(SellWandListener.class);
         NeoForge.EVENT_BUS.register(PlaytimeRewardListener.class);
         NeoForge.EVENT_BUS.register(MMOEcon.class);
