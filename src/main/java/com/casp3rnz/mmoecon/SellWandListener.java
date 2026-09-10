@@ -166,8 +166,11 @@ public class SellWandListener {
             ItemStack stack = handler.getStackInSlot(i);
             if (stack.isEmpty()) continue;
 
-            String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-            ShopItemManager.ShopItem shopItem = ShopItemManager.findItem(itemId);
+            // The sell wand is a custom-NBT blaze rod: price it off its own "sell_wand"
+            // entry, never the blaze_rod entry.
+            ShopItemManager.ShopItem shopItem = SellWand.isWand(stack)
+                    ? ShopItemManager.findSpecial("sell_wand")
+                    : ShopItemManager.findItem(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
             if (shopItem == null || !shopItem.canSell()) continue;
 
             // Only count what the handler will actually hand over. Drawer mods keep
