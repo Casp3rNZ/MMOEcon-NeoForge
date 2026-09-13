@@ -1,0 +1,39 @@
+package com.casp3rnz.mmoecon.playtime;
+
+import com.casp3rnz.mmoecon.balance.PlayerBalanceManager;
+import com.casp3rnz.mmoecon.core.Config;
+import com.casp3rnz.mmoecon.core.Messages;
+import com.casp3rnz.mmoecon.core.Money;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+
+/**
+ * Awards all online players a money reward every PLAYTIME_INTERVAL ticks.
+ */
+public final class PlaytimeRewardListener {
+
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (!Config.ENABLE_PLAYTIME_REWARDS.get()) return;
+
+        MinecraftServer server = event.getServer();
+        long interval = Config.PLAYTIME_INTERVAL.get();
+
+        if (server.getTickCount() % interval != 0) return;
+
+        // Skip the very first tick (tickCount == 0 at world load would fire immediately)
+        if (server.getTickCount() == 0) return;
+
+        long reward = Money.fromDouble(Config.PLAYTIME_REWARD.get());
+
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            PlayerBalanceManager.addBalance(player.getUUID(), reward);
+            player.sendSystemMessage(Messages.body(
+                    "You earned " + Messages.money(reward) + " for playing."));
+        }
+    }
+
+    private PlaytimeRewardListener() {}
+}
