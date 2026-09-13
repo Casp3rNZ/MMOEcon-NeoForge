@@ -137,11 +137,15 @@ public final class EconomyCommands {
                                             int amount = IntegerArgumentType.getInteger(ctx, "amount");
                                             return listHeldItem(ctx.getSource(), price, amount);
                                         })))));
+        // A redirect forwards subcommands but does NOT inherit the target's own executes,
+        // so the bare alias needs its own executes to open the GUI, matching "/ah".
         dispatcher.register(Commands.literal("auction")
                 .requires(src -> Permissions.check(src, Permissions.AH, 0))
+                .executes(ctx -> openAuctionHouse(ctx.getSource()))
                 .redirect(ah));
         dispatcher.register(Commands.literal("auctionhouse")
                 .requires(src -> Permissions.check(src, Permissions.AH, 0))
+                .executes(ctx -> openAuctionHouse(ctx.getSource()))
                 .redirect(ah));
     }
 
