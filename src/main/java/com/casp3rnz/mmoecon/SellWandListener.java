@@ -138,9 +138,12 @@ public class SellWandListener {
 
         PlayerBalanceManager.addBalance(player.getUUID(), actual.totalEarned);
 
+        SellReceiptStore.put(player.getUUID(), buildReceipt(actual));
+
         player.sendSystemMessage(Messages.body(
                 "Sold " + Messages.item(actual.totalItems + " items")
-                        + " for " + Messages.money(actual.totalEarned) + "."));
+                        + " for " + Messages.money(actual.totalEarned) + ".")
+                .copy().append(SellCommand.receiptButton()));
 
         TransactionLogger.log(player.getName().getString()
                 + " used sell wand at " + pending.blockPos()
@@ -166,9 +169,15 @@ public class SellWandListener {
             ItemStack stack = handler.getStackInSlot(i);
             if (stack.isEmpty()) continue;
 
+            boolean isWand = SellWand.isWand(stack);
+
+            // Skip enchanted / renamed / damaged items — only clean, full-durability
+            // stock items may be sold. The wand is exempt (it's priced via "sell_wand").
+            if (!SellFilter.isSellable(stack, isWand)) continue;
+
             // The sell wand is a custom-NBT blaze rod: price it off its own "sell_wand"
             // entry, never the blaze_rod entry.
-            ShopItemManager.ShopItem shopItem = SellWand.isWand(stack)
+            ShopItemManager.ShopItem shopItem = isWand
                     ? ShopItemManager.findSpecial("sell_wand")
                     : ShopItemManager.findItem(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
             if (shopItem == null || !shopItem.canSell()) continue;
@@ -184,10 +193,10 @@ public class SellWandListener {
             long earned = Money.multiply(unitPrice, extractable);
             totalEarned += earned;
             totalItems += extractable;
-            slots.add(new SlotSale(i, extractable, unitPrice, earned));
+            slots.add(new SlotSale(i, extractable, unitPrice));
         }
 
-        return new SaleResult(totalEarned, totalItems, slots);
+        return new SaleResult(totalEarned, totalItems, slots, List.of());
     }
 
     /**
@@ -281,28 +290,34 @@ public class SellWandListener {
     private static SaleResult removeItems(IItemHandler handler, List<SlotSale> slots) {
         long earned = 0L;
         int removed = 0;
-        List<SlotSale> actual = new ArrayList<>();
+        // The real stacks pulled from the container, kept for the receipt so the
+        // GUI can show them as-is (enchantments, custom names, damage and all).
+        List<SellReceiptBuilder.Entry> entries = new ArrayList<>();
 
         for (SlotSale slot : slots) {
             ItemStack taken = handler.extractItem(slot.slotIndex(), slot.quantity(), false);
             if (taken.isEmpty()) continue;
 
             int count = taken.getCount();
-            long slotEarned = Money.multiply(slot.unitPrice(), count);
-
-            earned += slotEarned;
+            earned += Money.multiply(slot.unitPrice(), count);
             removed += count;
-            actual.add(new SlotSale(slot.slotIndex(), count, slot.unitPrice(), slotEarned));
+            entries.add(new SellReceiptBuilder.Entry(taken, slot.unitPrice()));
         }
 
-        return new SaleResult(earned, removed, actual);
+        return new SaleResult(earned, removed, slots, entries);
+    }
+
+    /** Turns the executed sale's removed stacks into a receipt. */
+    private static SellReceipt buildReceipt(SaleResult sale) {
+        return SellReceiptBuilder.build(sale.entries());
     }
 
     // Internal records
 
-    private record SlotSale(int slotIndex, int quantity, long unitPrice, long earned) {}
+    private record SlotSale(int slotIndex, int quantity, long unitPrice) {}
 
-    private record SaleResult(long totalEarned, int totalItems, List<SlotSale> slots) {}
+    private record SaleResult(long totalEarned, int totalItems, List<SlotSale> slots,
+                              List<SellReceiptBuilder.Entry> entries) {}
 
     private SellWandListener() {}
 

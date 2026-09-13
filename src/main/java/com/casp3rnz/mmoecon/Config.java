@@ -5,7 +5,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 /**
  * TOML-based server config using NeoForge's ModConfigSpec.
  * Values are registered in the static initialiser and wired up in MMOEcon's
- * construstor via modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC).
+ * constructor via modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC).
  *
  * NeoForge writes the file to <server>/config/mmoecon-server.toml automatically.
  * Read e.g. Config.ENABLE_PLAYTIME_REWARDS.get().
