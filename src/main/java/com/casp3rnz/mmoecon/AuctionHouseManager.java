@@ -142,8 +142,9 @@ public final class AuctionHouseManager {
                 .append(Messages.itemHover(quantity + "x " + unitStack.getHoverName().getString(), unitStack))
                 .append(Component.literal(" for sale for " + Messages.money(price)));
         if (quantity > 1) {
-            announcement.append(Component.literal(" (" + Messages.money(price / quantity) + " each)!"));
+            announcement.append(Component.literal(" (" + Messages.money(price / quantity) + " each)"));
         }
+        announcement.append(Component.literal("!"));
         server.getPlayerList().broadcastSystemMessage(announcement, false);
     }
 
