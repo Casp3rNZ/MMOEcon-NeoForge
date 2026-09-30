@@ -20,6 +20,7 @@ import net.neoforged.neoforge.server.permission.nodes.PermissionTypes;
  *   mmoecon.command.ah        — /ah, /auction,/auctionhouse (default: everyone)
  *   mmoecon.admin.reload      — /shop reload                (default: OP, level 2)
  *   mmoecon.admin.sellwand    — /sellwand give              (default: OP, level 2)
+ *   mmoecon.admin.balance     — /bal get/set/add/subtract/admin (default: OP, level 2)
  * Registered on the NeoForge game event bus in the MMOEcon constructor:
  *   NeoForge.EVENT_BUS.register(Permissions.class);
  */
@@ -38,10 +39,11 @@ public final class Permissions {
     // Admin commands: OP by default.
     public static final PermissionNode<Boolean> RELOAD = node("admin.reload",   defaultTo(OP_LEVEL));
     public static final PermissionNode<Boolean> SELLWAND = node("admin.sellwand", defaultTo(OP_LEVEL));
+    public static final PermissionNode<Boolean> BALANCE_ADMIN = node("admin.balance", defaultTo(OP_LEVEL));
 
     @SubscribeEvent
     public static void onGatherPermissionNodes(PermissionGatherEvent.Nodes event) {
-        event.addNodes(BAL, PAY, SHOP, SELL, RELOAD, SELLWAND, AH);
+        event.addNodes(BAL, PAY, SHOP, SELL, RELOAD, SELLWAND, AH, BALANCE_ADMIN);
     }
 
     /**
