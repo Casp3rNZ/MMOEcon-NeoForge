@@ -27,7 +27,7 @@ import java.util.List;
  */
 public final class SellCommand {
 
-    static int sellHand(ServerPlayer player) {
+    public static int sellHand(ServerPlayer player) {
         ItemStack held = player.getMainHandItem();
         if (held.isEmpty()) {
             player.sendSystemMessage(Messages.error("You are not holding anything."));
@@ -82,7 +82,7 @@ public final class SellCommand {
         return 1;
     }
 
-    static int sellInventory(ServerPlayer player) {
+    public static int sellInventory(ServerPlayer player) {
         long totalEarned = 0L;
         int  totalSold   = 0;
         // Each sold slot's stack, in inventory order. The receipt builder merges
@@ -139,7 +139,7 @@ public final class SellCommand {
     }
 
     /** Opens the read-only receipt GUI for the player's most recent sale */
-    static int showReceipt(ServerPlayer player) {
+    public static int showReceipt(ServerPlayer player) {
         SellReceipt receipt = SellReceiptStore.get(player.getUUID());
         if (receipt == null || receipt.lines().isEmpty()) {
             player.sendSystemMessage(Messages.info("You have no recent sale to view."));

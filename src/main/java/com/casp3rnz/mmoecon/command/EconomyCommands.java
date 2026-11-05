@@ -59,6 +59,8 @@ public final class EconomyCommands {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         var dispatcher = event.getDispatcher();
 
+        BalanceAdminCommands.register(dispatcher);
+
         // /bal and /money
         dispatcher.register(Commands.literal("bal")
                 .requires(src -> Permissions.check(src, Permissions.BAL, 0))
