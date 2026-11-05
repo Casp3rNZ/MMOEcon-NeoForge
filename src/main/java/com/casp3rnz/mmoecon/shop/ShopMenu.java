@@ -111,6 +111,8 @@ import java.util.List;
 
         @Override
         public void clicked(int slotId, int button, ClickType clickType, Player player) {
+            // Only PICKUP is a real press. stops PICKUP_ALL triggering dupe events.
+            if (clickType != ClickType.PICKUP) return;
             // Block all item movement — we only care about the click position
             if (slotId < 0 || slotId >= shopInventory.getContainerSize()) return;
 
