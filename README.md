@@ -48,33 +48,6 @@ Players also need `mmoecon.command.bal` to access the `/bal` command tree and GU
 Permission mods can grant or deny these nodes through NeoForge's permission API.
 Console, command blocks, and functions use the vanilla level 2 permission check.
 
-Targets must already have a stored account. Commands accept and suggest usernames
-only, including locally cached offline usernames. Unknown or ambiguous names are
-rejected; an offline player whose name is not cached must join before being targeted
-by command. These commands do not create accounts or query external profile services.
-
-Amounts are dollars: `12.34` means 1,234 cents. Use plain digits with at most two
-decimal places; currency symbols, grouping separators, exponents, and negative
-amounts are rejected. Set allows zero; add and subtract require a positive amount.
-Insufficient funds and overflow are rejected without changing the balance.
-The maximum balance is `$92233720368547758.07`.
-
-`/bal admin` opens a vanilla six-row chest GUI; clients do not need MMO Econ.
-Select an account, choose set/add/subtract, and adjust the amount using the
-one-cent, one-dollar, and hundred-dollar buttons. Reset clears the amount.
-Review the before/after balances, then apply or cancel. Switching operation resets
-the amount to the current balance for set, or `$0.00` for add/subtract.
-If the account balance changes during confirmation, review and confirm again.
-Permissions are checked when opening and while using the menu.
-
-Successful changes are logged to `config/mmoecon/transactions.log` with the actor,
-target UUID, operation, amount, and exact before/after balances. Changes use the
-existing `balances.dat` persistence: a scheduled flush every 1,200 ticks and a
-flush on normal shutdown. Success confirms the live account changed; it does not
-guarantee an immediate disk write. A crash before the next flush can lose changes.
-
-Development verification steps are in [docs/admin-balance-validation.md](docs/admin-balance-validation.md).
-
 ### Customising the Shop
 The GUI shop is dynamically populated by /config/mmoecon/MMOShop.json.
 If you don't want to write a shop JSON file from scratch, an example one will be generated the first time the mod runs to get you started.
