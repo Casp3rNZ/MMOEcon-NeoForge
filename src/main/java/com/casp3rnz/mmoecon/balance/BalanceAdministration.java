@@ -7,9 +7,8 @@ import net.minecraft.server.MinecraftServer;
 import java.util.UUID;
 
 /**
- * Validated administrator operations over the existing balance store.
- * Callers must authorize the actor before invoking this API. All calls run on
- * the server thread so validation and mutation cannot interleave with gameplay.
+ * Administrator operations over the existing balance store.
+ * Callers must authorize the actor before invoking this API.
  * Success updates the live account; the balance manager handles scheduled persistence.
  */
 public final class BalanceAdministration {

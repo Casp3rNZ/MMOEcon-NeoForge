@@ -63,7 +63,7 @@ public final class BalanceAdminCommands {
         if (target == null) return 0;
         BalanceAdministration.Result result = BalanceAdministration.get(src.getServer(), target.uuid());
         if (!result.success()) return failure(src, result);
-        src.sendSuccess(() -> Messages.body(target.name() + " balance: $"
+        src.sendSuccess(() -> Messages.body(target.name() + " balance: §a$"
                 + Money.formatExact(result.balance())), false);
         return Command.SINGLE_SUCCESS;
     }
@@ -85,9 +85,9 @@ public final class BalanceAdminCommands {
         BalanceAdministration.Result result = BalanceAdministration.execute(
                 src.getServer(), actor, target.uuid(), operation, amount);
         if (!result.success()) return failure(src, result);
-        src.sendSuccess(() -> Messages.success(target.name() + " balance: $"
-                + Money.formatExact(result.previousBalance()) + " -> $" + Money.formatExact(result.balance())
-                + "."), true);
+        src.sendSuccess(() -> Messages.body(target.name() + " balance: §a$"
+                + Money.formatExact(result.previousBalance()) + "§7 -> §a$" + Money.formatExact(result.balance())
+                + "§7."), true);
         return Command.SINGLE_SUCCESS;
     }
 

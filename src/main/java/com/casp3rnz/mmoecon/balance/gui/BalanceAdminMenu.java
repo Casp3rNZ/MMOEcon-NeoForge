@@ -4,9 +4,12 @@ import com.casp3rnz.mmoecon.balance.BalanceAdministration;
 import com.casp3rnz.mmoecon.balance.BalanceTargets;
 import com.casp3rnz.mmoecon.core.Messages;
 import com.casp3rnz.mmoecon.core.Money;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -18,6 +21,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
+import net.minecraft.world.item.component.ResolvableProfile;
 
 import java.util.Arrays;
 
@@ -81,6 +85,7 @@ public final class BalanceAdminMenu extends AbstractContainerMenu {
         }
         // Ignore shift-click, hotbar swaps, drag, drops, and all inventory movement.
         if (type != ClickType.PICKUP || button != 0 || slot < 0 || slot >= 54) return;
+        playClickSound();
         if (slot == BACK) {
             if (session.view == BalanceAdminViews.ACCOUNTS) {
                 player.closeContainer();
@@ -155,7 +160,7 @@ public final class BalanceAdminMenu extends AbstractContainerMenu {
         BalanceAdministration.Result current = current();
         if (!current.success()) { fail(current); session.view = BalanceAdminViews.EDIT; return; }
         if (current.balance() != session.confirmationBalance) {
-            player.sendSystemMessage(Messages.error("The balance changed. Review it and confirm again."));
+            player.sendSystemMessage(Messages.error("That players balance has changed. Please try again."));
             session.view = BalanceAdminViews.EDIT;
             return;
         }
@@ -163,9 +168,10 @@ public final class BalanceAdminMenu extends AbstractContainerMenu {
         BalanceAdministration.Result result = BalanceAdministration.execute(
                 player.getServer(), actor, session.target, session.operation, session.amount);
         if (result.success()) {
-            player.sendSystemMessage(Messages.success(BalanceTargets.describe(player.getServer(), session.target).name()
-                    + " balance: $" + Money.formatExact(result.previousBalance())
-                    + " -> $" + Money.formatExact(result.balance()) + "."));
+            playTransactionSound();
+            player.sendSystemMessage(Messages.body(BalanceTargets.describe(player.getServer(), session.target).name()
+                    + " balance: §a$" + Money.formatExact(result.previousBalance())
+                    + "§7 -> §a$" + Money.formatExact(result.balance()) + "§7."));
         } else fail(result);
         session.view = BalanceAdminViews.EDIT;
     }
@@ -191,7 +197,7 @@ public final class BalanceAdminMenu extends AbstractContainerMenu {
             case CONFIRM -> populateConfirm();
         }
         display.setItem(BACK, icon(Items.BARRIER,
-                session.view == BalanceAdminViews.ACCOUNTS ? "Close" : "Back"));
+                session.view == BalanceAdminViews.ACCOUNTS ? "§cClose" : "§c← Back"));
         broadcastChanges();
     }
 
@@ -201,18 +207,17 @@ public final class BalanceAdminMenu extends AbstractContainerMenu {
             if (index >= session.accounts.size()) break;
             BalanceTargets.Target target = session.accounts.get(index);
             BalanceAdministration.Result result = BalanceAdministration.get(player.getServer(), target.uuid());
-            display.setItem(slot, icon(Items.PAPER, target.name(), target.uuid().toString(),
-                    result.success() ? "Balance: $" + Money.formatExact(result.balance()) : "Account unavailable",
-                    "Click to manage"));
+            display.setItem(slot, playerHead(target, result.success() ?
+                    "§7Balance: §a$" + Money.formatExact(result.balance()) : "§cAccount unavailable", "§7Click to manage"));
         }
-        if (session.accounts.isEmpty()) display.setItem(22, icon(Items.COBWEB, "No stored accounts"));
-        if (session.page > 0) display.setItem(PREVIOUS, icon(Items.ARROW, "Previous page"));
+        if (session.accounts.isEmpty()) display.setItem(22, icon(Items.COBWEB, "§7No stored accounts"));
+        if (session.page > 0) display.setItem(PREVIOUS, icon(Items.ARROW, "§ePrevious page"));
         if ((session.page + 1) * PAGE_SIZE < session.accounts.size()) {
-            display.setItem(NEXT, icon(Items.ARROW, "Next page"));
+            display.setItem(NEXT, icon(Items.ARROW, "§eNext page"));
         }
-        display.setItem(INFO, icon(Items.BOOK, "Accounts", "Page " + (session.page + 1),
-                "Stored accounts: " + session.accounts.size()));
-        display.setItem(REFRESH, icon(Items.CLOCK, "Refresh accounts"));
+        display.setItem(INFO, icon(Items.LANTERN, "§6Balance Administration", "§7Page: " + (session.page + 1),
+                "§7Online Players: " + session.accounts.size()));
+        display.setItem(REFRESH, icon(Items.CLOCK, "§bRefresh"));
     }
 
     private void populateEdit() {
@@ -221,45 +226,79 @@ public final class BalanceAdminMenu extends AbstractContainerMenu {
             long delta = AMOUNT_DELTAS[i];
             display.setItem(AMOUNT_SLOTS[i], icon(delta < 0 ? Items.RED_STAINED_GLASS_PANE
                     : Items.LIME_STAINED_GLASS_PANE,
-                    (delta < 0 ? "-" : "+") + "$" + Money.formatExact(Math.abs(delta))));
+                    (delta < 0 ? "§c- " : "§a+ ") + "$" + Money.formatExact(Math.abs(delta))));
         }
-        display.setItem(18, icon(Items.BUCKET, "Reset amount to $0.00"));
+        display.setItem(18, icon(Items.TNT, "§cReset amount to $0"));
         display.setItem(20, operationIcon(BalanceAdministration.Operation.SET));
         display.setItem(22, operationIcon(BalanceAdministration.Operation.ADD));
         display.setItem(24, operationIcon(BalanceAdministration.Operation.SUBTRACT));
-        display.setItem(31, icon(Items.EMERALD, "Review change",
-                "Operation: " + session.operation, "Amount: $" + Money.formatExact(session.amount)));
-        display.setItem(INFO, icon(Items.BOOK, "Exact amounts",
-                "Buttons adjust the amount; review before applying.",
-                "Commands also accept exact dollar amounts."));
+        display.setItem(31, icon(Items.EMERALD, "§aReview change",
+                "§7Operation: " + titleCase(session.operation), "§7Amount: §a$" + Money.formatExact(session.amount)));
+        display.setItem(INFO, icon(Items.LANTERN, "§6Modify Player Balance",
+                "§7Use the buttons to modify the amount, review before applying."));
     }
 
     private ItemStack operationIcon(BalanceAdministration.Operation operation) {
         return icon(session.operation == operation ? Items.LIME_WOOL : Items.GRAY_WOOL,
-                operation.toString(), session.operation == operation ? "Selected" : "Click to select");
+                titleCase(operation), session.operation == operation ? "§aSelected" : "§bClick to select");
     }
 
     private void populateTarget() {
         BalanceTargets.Target target = BalanceTargets.describe(player.getServer(), session.target);
         BalanceAdministration.Result result = current();
-        display.setItem(13, icon(Items.PAPER, target.name(), target.uuid().toString(),
-                result.success() ? "Current balance: $" + Money.formatExact(result.balance()) : "Account unavailable"));
+        display.setItem(13, playerHead(target,
+                result.success() ? "§7Balance: §a$" + Money.formatExact(result.balance()) : "§cAccount unavailable"));
     }
 
     private void populateConfirm() {
         populateTarget();
         BalanceAdministration.Result preview = BalanceAdministration.calculate(
                 session.confirmationBalance, session.operation, session.amount);
-        display.setItem(22, icon(Items.GOLD_INGOT, "Confirm " + session.operation,
-                "Amount: $" + Money.formatExact(session.amount),
-                "Before: $" + Money.formatExact(session.confirmationBalance),
-                "After: $" + Money.formatExact(preview.balance())));
-        display.setItem(ACCEPT, icon(Items.LIME_WOOL, "Apply change"));
-        display.setItem(CANCEL, icon(Items.RED_WOOL, "Cancel"));
+        display.setItem(22, icon(Items.GOLD_INGOT, titleCase(session.operation),
+                "§7Amount: §a$" + Money.formatExact(session.amount),
+                "§7Before: §a$" + Money.formatExact(session.confirmationBalance),
+                "§7After: §a$" + Money.formatExact(preview.balance())));
+        display.setItem(ACCEPT, icon(Items.LIME_WOOL, "§aApply change"));
+        display.setItem(CANCEL, icon(Items.RED_WOOL, "§cCancel"));
+    }
+
+    private void playClickSound() {
+        player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.5f,
+                0.5f + player.getRandom().nextFloat());
+    }
+
+    private void playTransactionSound() {
+        player.playNotifySound(SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.7f, 1.0f);
+    }
+
+    /** Enum for operation name display */
+    private static String titleCase(BalanceAdministration.Operation operation) {
+        String name = operation.toString();
+        switch (name) {
+            case "SET" -> name = "§6Set";
+            case "ADD" -> name = "§aAdd";
+            case "SUBTRACT" -> name = "§cSubtract";
+        }
+        return name;
     }
 
     private static ItemStack icon(Item item, String name, String... lore) {
-        ItemStack stack = new ItemStack(item);
+        return applyDisplay(new ItemStack(item), name, lore);
+    }
+
+    /**
+     * A player head item skinned to its account.
+     * The profile carries the stored UUID and cached name; the client resolves the skin from the UUID for a real
+     * account, and falls back to the default head for an uncached offline one.
+     */
+    private static ItemStack playerHead(BalanceTargets.Target target, String... lore) {
+        ItemStack stack = new ItemStack(Items.PLAYER_HEAD);
+        stack.set(DataComponents.PROFILE,
+                new ResolvableProfile(new GameProfile(target.uuid(), target.name())));
+        return applyDisplay(stack, target.name(), lore);
+    }
+
+    private static ItemStack applyDisplay(ItemStack stack, String name, String... lore) {
         stack.set(DataComponents.CUSTOM_NAME, Component.literal(name).withStyle(s -> s.withItalic(false)));
         stack.set(DataComponents.LORE, new ItemLore(Arrays.stream(lore)
                 .map(line -> (Component) Component.literal(line).withStyle(s -> s.withItalic(false))).toList()));

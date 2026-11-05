@@ -25,7 +25,7 @@ public final class BalanceAdminOpener {
         player.openMenu(new MenuProvider() {
             @Override
             public Component getDisplayName() {
-                return Component.literal("Balance Administration");
+                return Component.literal("§6Balance Administration");
             }
 
             @Override
